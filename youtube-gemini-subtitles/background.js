@@ -580,63 +580,75 @@ function parseFlexibleFormat(text, hasTranslation = false) {
   
   try {
     // Remove any introductory text
-    let cleanText = text.replace(/^.*?(?=\d+\s+\d{2}:\d{2}:\d{2})/s, '');
+    let cleanText = text.replace(/^.*?(?=\d+\s+\d{1,2}:\d{2}:\d{2})/s, '');
     
-    // Split by numbers at the start of lines to separate subtitle entries
-    const entries = cleanText.split(/(?=\d+\s+\d{2}:\d{2}:\d{2})/);
+    // Use flexible pattern that handles both normal and malformed timestamps
+    const timestampPattern = /(\d+)\s+((?:\d{1,2}:\d{2}:\d{2}[,.:]\d{1,3})|(?:\d{1,2}:\d{2}[,:]\d{2,3}))\s*(?:-->|→|to)\s*((?:\d{1,2}:\d{2}:\d{2}[,.:]\d{1,3})|(?:\d{1,2}:\d{2}[,:]\d{2,3}))/g;
+    const matches = [];
+    let match;
     
-    for (const entry of entries) {
-      if (!entry.trim()) continue;
+    while ((match = timestampPattern.exec(cleanText)) !== null) {
+      matches.push({
+        sequence: match[1],
+        startTime: match[2],
+        endTime: match[3],
+        startPos: match.index,
+        endPos: timestampPattern.lastIndex
+      });
+    }
+    
+    console.log('Background: Found', matches.length, 'timestamp matches in flexible parsing');
+    
+    // Extract content for each match
+    for (let i = 0; i < matches.length; i++) {
+      const current = matches[i];
+      const next = matches[i + 1];
       
-      // More flexible pattern to handle malformed timestamps
-      const entryPattern = /^(\d+)\s+(\d{2}:\d{2}:\d{2}[,.:]\d{1,3})\s*(?:-->|→|to)\s*(\d{2}:\d{2}:\d{2}[,.:]\d{1,3})\s+(.+)$/s;
-      const match = entry.trim().match(entryPattern);
+      // Content starts after the timestamp and goes to the next timestamp or end
+      const contentStart = current.endPos;
+      const contentEnd = next ? next.startPos : cleanText.length;
+      const content = cleanText.substring(contentStart, contentEnd).trim();
       
-      if (match) {
-        const [, sequence, startTime, endTime, content] = match;
+      if (content.length === 0) continue;
+      
+      // Normalize time format - fix malformed timestamps
+      let normalizedStartTime = normalizeTimestamp(current.startTime);
+      let normalizedEndTime = normalizeTimestamp(current.endTime);
+      
+      // Handle cases where content has both original and translation
+      if (hasTranslation) {
+        // Try to split by language patterns (e.g., Japanese followed by English)
+        const parts = content.split(/(?=[A-Z][a-z]|\s[A-Z])/);
         
-        // Normalize time format and fix malformed milliseconds
-        let normalizedStartTime = startTime.replace(/[.:](\d{1,3})$/, (_, ms) => `,${ms.padEnd(3, '0')}`);
-        let normalizedEndTime = endTime.replace(/[.:](\d{1,3})$/, (_, ms) => `,${ms.padEnd(3, '0')}`);
-        
-        // Handle cases where content has both original and translation
-        const contentParts = content.trim().split(/\s{2,}|\n+/);
-        
-        if (hasTranslation && contentParts.length >= 2) {
-          // Try to split by language patterns (e.g., Japanese followed by English)
-          const allText = contentParts.join(' ');
-          const parts = allText.split(/(?=[A-Z][a-z]|\s[A-Z])/);
-          
-          if (parts.length >= 2) {
-            subtitles.push({
-              sequence: parseInt(sequence),
-              startTime: normalizedStartTime,
-              endTime: normalizedEndTime,
-              text: parts[0].trim(),
-              translation: parts.slice(1).join('').trim()
-            });
-          } else {
-            // Fallback: split roughly in half
-            const midPoint = Math.floor(allText.length / 2);
-            const spaceIndex = allText.indexOf(' ', midPoint);
-            const splitIndex = spaceIndex > -1 ? spaceIndex : midPoint;
-            
-            subtitles.push({
-              sequence: parseInt(sequence),
-              startTime: normalizedStartTime,
-              endTime: normalizedEndTime,
-              text: allText.substring(0, splitIndex).trim(),
-              translation: allText.substring(splitIndex).trim()
-            });
-          }
-        } else {
+        if (parts.length >= 2) {
           subtitles.push({
-            sequence: parseInt(sequence),
+            sequence: parseInt(current.sequence),
             startTime: normalizedStartTime,
             endTime: normalizedEndTime,
-            text: contentParts.join(' ').trim()
+            text: parts[0].trim(),
+            translation: parts.slice(1).join('').trim()
+          });
+        } else {
+          // Fallback: split roughly in half
+          const midPoint = Math.floor(content.length / 2);
+          const spaceIndex = content.indexOf(' ', midPoint);
+          const splitIndex = spaceIndex > -1 ? spaceIndex : midPoint;
+          
+          subtitles.push({
+            sequence: parseInt(current.sequence),
+            startTime: normalizedStartTime,
+            endTime: normalizedEndTime,
+            text: content.substring(0, splitIndex).trim(),
+            translation: content.substring(splitIndex).trim()
           });
         }
+      } else {
+        subtitles.push({
+          sequence: parseInt(current.sequence),
+          startTime: normalizedStartTime,
+          endTime: normalizedEndTime,
+          text: content
+        });
       }
     }
     
@@ -647,6 +659,29 @@ function parseFlexibleFormat(text, hasTranslation = false) {
     console.error('Background: Flexible parsing failed:', error);
     return [];
   }
+}
+
+// Normalize malformed timestamps
+function normalizeTimestamp(timestamp) {
+  // Handle various malformed timestamp formats
+  // Examples: 00:28,805 -> 00:28:00,805, 00:33,095 -> 00:33:00,095
+  
+  // If it looks like HH:MM,SSS (comma in wrong place), fix it
+  if (/^\d{1,2}:\d{2},\d{3}$/.test(timestamp)) {
+    // Convert 00:28,805 to 00:28:00,805
+    const parts = timestamp.split(',');
+    const timePart = parts[0]; // "00:28"
+    const msPart = parts[1]; // "805"
+    return `${timePart}:00,${msPart}`;
+  }
+  
+  // If it looks like HH:MM:SS,MS (normal format), just ensure 3-digit milliseconds
+  if (/^\d{1,2}:\d{2}:\d{2}[,.:]\d{1,3}$/.test(timestamp)) {
+    return timestamp.replace(/[.:](\d{1,3})$/, (_, ms) => `,${ms.padEnd(3, '0')}`);
+  }
+  
+  // Fallback: return as-is
+  return timestamp;
 }
 
 // Create fallback subtitles when SRT parsing fails
