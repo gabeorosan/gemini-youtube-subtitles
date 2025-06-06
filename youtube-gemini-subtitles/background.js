@@ -109,7 +109,7 @@ async function transcribeWithGemini(videoData, apiKey, translationLanguage, sele
     // Create multimodal prompt with YouTube URL using file_uri
     const parts = [];
     
-    // Add text prompt for subtitle generation
+    // Add text prompt for subtitle generation using JSON structured output
     let textPrompt;
     if (hasTranslation) {
       textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
@@ -119,36 +119,36 @@ Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-IMPORTANT: Generate subtitles in proper SRT format ONLY. Do not include any explanatory text, markdown formatting, or code blocks. Start directly with the subtitle entries.
+CRITICAL: You MUST return ONLY a valid JSON array. No explanatory text, no markdown, no code blocks.
 
-Create subtitles in the video's original language first, then provide translations in ${translationLanguage}.
+Required JSON format with these exact properties:
+- sequence: number (1, 2, 3, etc.)
+- startTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:23,500")
+- endTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:26,800")
+- text: string (the original subtitle text)
+- translation: string (the ${translationLanguage} translation)
 
-For each subtitle entry, use EXACTLY this format:
-[sequence number]
-[start time] --> [end time]
-[original subtitle text]
-[${translationLanguage} translation]
+Example format:
+[
+  {
+    "sequence": 1,
+    "startTime": "00:00:00,000",
+    "endTime": "00:00:03,000",
+    "text": "Welcome to this amazing video!",
+    "translation": "¡Bienvenidos a este increíble video!"
+  },
+  {
+    "sequence": 2,
+    "startTime": "00:00:03,000",
+    "endTime": "00:00:06,000",
+    "text": "Today we'll be exploring...",
+    "translation": "Hoy vamos a explorar..."
+  }
+]
 
-Example:
-1
-00:00:00,000 --> 00:00:03,000
-Welcome to this amazing video!
-¡Bienvenidos a este increíble video!
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
 
-2
-00:00:03,000 --> 00:00:06,000
-Today we'll be exploring...
-Hoy vamos a explorar...
-
-Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. 
-
-CRITICAL FORMATTING REQUIREMENTS:
-- Use EXACTLY this time format: HH:MM:SS,mmm --> HH:MM:SS,mmm (hours:minutes:seconds,milliseconds)
-- Each subtitle must be separated by a blank line
-- Sequence numbers must be on their own line
-- Time codes must be on their own line
-- Text content must be on separate lines after the time code
-- Do NOT add any extra text, explanations, or formatting`;
+RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER`;
     } else {
       textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
 
@@ -157,33 +157,33 @@ Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-IMPORTANT: Generate subtitles in proper SRT format ONLY. Do not include any explanatory text, markdown formatting, or code blocks. Start directly with the subtitle entries.
+CRITICAL: You MUST return ONLY a valid JSON array. No explanatory text, no markdown, no code blocks.
 
-Create subtitles in the video's original language (detect from the actual video content).
+Required JSON format with these exact properties:
+- sequence: number (1, 2, 3, etc.)
+- startTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:23,500")
+- endTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:26,800")
+- text: string (the subtitle text in the video's original language)
 
-For each subtitle entry, use EXACTLY this format:
-[sequence number]
-[start time] --> [end time]
-[subtitle text in original language]
-
-Example:
-1
-00:00:00,000 --> 00:00:03,000
-Welcome to this amazing video!
-
-2
-00:00:03,000 --> 00:00:06,000
-Today we'll be exploring...
+Example format:
+[
+  {
+    "sequence": 1,
+    "startTime": "00:00:00,000",
+    "endTime": "00:00:03,000",
+    "text": "Welcome to this amazing video!"
+  },
+  {
+    "sequence": 2,
+    "startTime": "00:00:03,000",
+    "endTime": "00:00:06,000",
+    "text": "Today we'll be exploring..."
+  }
+]
 
 Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
 
-CRITICAL FORMATTING REQUIREMENTS:
-- Use EXACTLY this time format: HH:MM:SS,mmm --> HH:MM:SS,mmm (hours:minutes:seconds,milliseconds)
-- Each subtitle must be separated by a blank line
-- Sequence numbers must be on their own line
-- Time codes must be on their own line
-- Text content must be on separate lines after the time code
-- Do NOT add any extra text, explanations, or formatting`;
+RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER`;
     }
     
     // Add text prompt first, then YouTube URL as fileData
@@ -245,22 +245,36 @@ CRITICAL FORMATTING REQUIREMENTS:
     console.log('Background: Generated text length:', generatedText.length);
     console.log('Background: Generated text preview:', generatedText.substring(0, 500));
 
-    // Parse the SRT format
-    const subtitles = parseSRTFormat(generatedText, hasTranslation);
-    console.log('Background: Parsed subtitles count:', subtitles.length);
+    // Try multiple parsing strategies
+    let subtitles = [];
     
-    if (subtitles.length === 0) {
-      console.error('Background: Failed to parse subtitles. Generated text:', generatedText);
+    try {
+      // First try JSON format
+      subtitles = parseJSONFormat(generatedText, hasTranslation);
+      console.log('Background: JSON parsing successful:', subtitles.length, 'subtitles');
+    } catch (jsonError) {
+      console.log('Background: JSON parsing failed:', jsonError.message);
       
-      // Try to create basic subtitles from the generated text as fallback
+      try {
+        // Fall back to SRT format parsing
+        subtitles = parseSRTFormat(generatedText, hasTranslation);
+        console.log('Background: SRT parsing successful:', subtitles.length, 'subtitles');
+      } catch (srtError) {
+        console.log('Background: SRT parsing also failed:', srtError.message);
+        
+        // Try to extract subtitles from malformed text
+        subtitles = parseFlexibleFormat(generatedText, hasTranslation);
+        console.log('Background: Flexible parsing result:', subtitles.length, 'subtitles');
+      }
+    }
+
+    if (subtitles.length === 0) {
+      console.error('Background: All parsing methods failed. Generated text:', generatedText);
+      
+      // Create basic fallback subtitles
       const fallbackSubtitles = createFallbackSubtitles(generatedText, videoLength, hasTranslation);
       if (fallbackSubtitles.length > 0) {
-        console.log('Background: Using fallback subtitles:', {
-          type: typeof fallbackSubtitles,
-          isArray: Array.isArray(fallbackSubtitles),
-          length: fallbackSubtitles.length,
-          firstItem: fallbackSubtitles[0]
-        });
+        console.log('Background: Using fallback subtitles:', fallbackSubtitles.length);
         return fallbackSubtitles;
       }
       
@@ -293,45 +307,207 @@ CRITICAL FORMATTING REQUIREMENTS:
 
 
 
-// Function to parse SRT format with improved flexibility
+// Function to parse JSON format with fallback to SRT
+function parseJSONFormat(responseText, hasTranslation = false) {
+  console.log('Background: Attempting to parse JSON format');
+  
+  try {
+    // First, try to extract JSON from the response
+    let jsonText = responseText.trim();
+    
+    // Remove any markdown code blocks if present
+    if (jsonText.includes('```')) {
+      const jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1];
+      }
+    }
+    
+    // Try to find JSON array in the text
+    const jsonArrayMatch = jsonText.match(/\[[\s\S]*\]/);
+    if (jsonArrayMatch) {
+      jsonText = jsonArrayMatch[0];
+    }
+    
+    console.log('Background: Extracted JSON text:', jsonText.substring(0, 200));
+    
+    // Parse the JSON
+    const subtitlesArray = JSON.parse(jsonText);
+    
+    if (!Array.isArray(subtitlesArray)) {
+      throw new Error('Response is not an array');
+    }
+    
+    // Validate and normalize the subtitle objects
+    const validSubtitles = [];
+    for (let i = 0; i < subtitlesArray.length; i++) {
+      const subtitle = subtitlesArray[i];
+      
+      if (!subtitle || typeof subtitle !== 'object') {
+        console.warn(`Background: Invalid subtitle object at index ${i}:`, subtitle);
+        continue;
+      }
+      
+      // Validate required properties
+      if (!subtitle.startTime || !subtitle.endTime || !subtitle.text) {
+        console.warn(`Background: Missing required properties in subtitle ${i + 1}:`, subtitle);
+        continue;
+      }
+      
+      // Normalize the subtitle object
+      const normalizedSubtitle = {
+        sequence: subtitle.sequence || (i + 1),
+        startTime: subtitle.startTime,
+        endTime: subtitle.endTime,
+        text: subtitle.text
+      };
+      
+      if (hasTranslation && subtitle.translation) {
+        normalizedSubtitle.translation = subtitle.translation;
+      }
+      
+      validSubtitles.push(normalizedSubtitle);
+    }
+    
+    console.log('Background: Successfully parsed JSON format:', validSubtitles.length, 'subtitles');
+    return validSubtitles;
+    
+  } catch (error) {
+    console.log('Background: JSON parsing failed:', error.message);
+    console.log('Background: Falling back to SRT parsing');
+    
+    // Fallback to SRT parsing
+    return parseSRTFormat(responseText, hasTranslation);
+  }
+}
+
+// Function to parse SRT format with improved flexibility for malformed input
 function parseSRTFormat(srtText, hasTranslation = false) {
   const subtitles = [];
   
   console.log('Background: Parsing SRT text, length:', srtText.length);
+  console.log('Background: SRT text preview:', srtText.substring(0, 300));
+  
+  // Remove any introductory text before the actual subtitles
+  let cleanText = srtText.replace(/^.*?(?=\d+\s+\d{2}:\d{2}:\d{2})/s, '');
   
   // Try to extract SRT content if it's wrapped in markdown code blocks
-  let cleanText = srtText;
   const codeBlockMatch = srtText.match(/```(?:srt)?\s*([\s\S]*?)\s*```/i);
   if (codeBlockMatch) {
     cleanText = codeBlockMatch[1];
     console.log('Background: Extracted from code block');
   }
   
+  // Handle the malformed format like: "1 00:25:33,045 --> 00:28:805 健康なんていらない I don't need health"
+  // Use regex to find all subtitle entries
+  const subtitlePattern = /(\d+)\s+(\d{2}:\d{2}:\d{2}[,\.]\d{1,3})\s*(?:-->|→|–|-)\s*(\d{2}:\d{2}:\d{2}[,\.]\d{1,3})\s+(.+?)(?=\d+\s+\d{2}:\d{2}:\d{2}|$)/gs;
+  
+  let match;
+  while ((match = subtitlePattern.exec(cleanText)) !== null) {
+    const [, sequenceStr, startTimeStr, endTimeStr, textContent] = match;
+    
+    const sequence = parseInt(sequenceStr);
+    if (isNaN(sequence)) continue;
+    
+    // Normalize time format (fix milliseconds and use commas)
+    const normalizeTime = (timeStr) => {
+      let normalized = timeStr.replace('.', ','); // Convert periods to commas
+      
+      // Fix milliseconds format (ensure 3 digits)
+      const timeParts = normalized.split(',');
+      if (timeParts.length === 2) {
+        let milliseconds = timeParts[1];
+        if (milliseconds.length === 1) milliseconds += '00';
+        else if (milliseconds.length === 2) milliseconds += '0';
+        else if (milliseconds.length > 3) milliseconds = milliseconds.substring(0, 3);
+        normalized = timeParts[0] + ',' + milliseconds;
+      }
+      
+      return normalized;
+    };
+    
+    const startTime = normalizeTime(startTimeStr);
+    const endTime = normalizeTime(endTimeStr);
+    
+    // Handle text content (might contain both original and translation)
+    let text = textContent.trim();
+    let translation = '';
+    
+    if (hasTranslation) {
+      // Try to split text into original and translation
+      // Look for common patterns like Japanese followed by English
+      const lines = text.split(/\n+/).filter(line => line.trim());
+      if (lines.length >= 2) {
+        text = lines[0].trim();
+        translation = lines.slice(1).join(' ').trim();
+      } else {
+        // Try to detect language boundary (very basic)
+        const words = text.split(/\s+/);
+        if (words.length > 1) {
+          // Simple heuristic: if we have mixed scripts, try to separate them
+          const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+          const hasLatin = /[A-Za-z]/.test(text);
+          
+          if (hasJapanese && hasLatin) {
+            const parts = text.split(/(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF])\s+(?=[A-Za-z])/);
+            if (parts.length >= 2) {
+              text = parts[0].trim();
+              translation = parts.slice(1).join(' ').trim();
+            }
+          }
+        }
+      }
+    }
+    
+    const subtitle = {
+      sequence,
+      startTime,
+      endTime,
+      text
+    };
+    
+    if (translation) {
+      subtitle.translation = translation;
+    }
+    
+    subtitles.push(subtitle);
+    console.log(`Background: Parsed subtitle ${sequence}:`, subtitle);
+  }
+  
+  // If regex parsing failed, try the old block-based approach
+  if (subtitles.length === 0) {
+    console.log('Background: Regex parsing failed, trying block-based approach');
+    return parseSRTBlocks(cleanText, hasTranslation);
+  }
+  
+  console.log('Background: Successfully parsed', subtitles.length, 'subtitles using regex approach');
+  return subtitles;
+}
+
+// Fallback block-based SRT parsing
+function parseSRTBlocks(srtText, hasTranslation = false) {
+  const subtitles = [];
+  
   // Split into blocks - try different separators
-  let blocks = cleanText.split(/\n\s*\n/).filter(block => block.trim());
+  let blocks = srtText.split(/\n\s*\n/).filter(block => block.trim());
   
   if (blocks.length === 0) {
-    // Try splitting by double newlines with different whitespace
-    blocks = cleanText.split(/\n\n+/).filter(block => block.trim());
+    blocks = srtText.split(/\n\n+/).filter(block => block.trim());
   }
   
   if (blocks.length === 0) {
-    // Try splitting by sequence numbers
-    blocks = cleanText.split(/(?=^\d+$)/m).filter(block => block.trim());
+    blocks = srtText.split(/(?=^\d+$)/m).filter(block => block.trim());
   }
   
   console.log('Background: Found', blocks.length, 'blocks to parse');
   
   blocks.forEach((block, index) => {
     const lines = block.trim().split('\n').map(line => line.trim()).filter(line => line);
-    console.log(`Background: Block ${index + 1}:`, lines);
     
     if (lines.length >= 3) {
-      // Try to find sequence number (might not be first line)
       let sequenceIndex = 0;
       let sequence = parseInt(lines[0]);
       
-      // If first line isn't a number, look for it
       if (isNaN(sequence)) {
         for (let i = 0; i < lines.length; i++) {
           const num = parseInt(lines[i]);
@@ -395,6 +571,76 @@ function parseSRTFormat(srtText, hasTranslation = false) {
   
   console.log('Background: Successfully parsed', subtitles.length, 'subtitles');
   return subtitles;
+}
+
+// Parse malformed subtitle text with flexible patterns
+function parseFlexibleFormat(text, hasTranslation = false) {
+  console.log('Background: Attempting flexible parsing');
+  const subtitles = [];
+  
+  try {
+    // Remove any introductory text
+    let cleanText = text.replace(/^.*?(?=\d+\s+\d{2}:\d{2}:\d{2})/s, '');
+    
+    // Pattern to match subtitle entries in various formats
+    // Handles cases like: "1 00:25:33,045 --> 00:28:805 健康なんていらない I don't need health"
+    const flexiblePattern = /(\d+)\s+(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s*(?:-->|→|to)\s*(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s+(.+?)(?=\d+\s+\d{2}:\d{2}:\d{2}|$)/gs;
+    
+    let match;
+    while ((match = flexiblePattern.exec(cleanText)) !== null) {
+      const [, sequence, startTime, endTime, content] = match;
+      
+      // Normalize time format (convert dots/colons to commas for milliseconds)
+      const normalizedStartTime = startTime.replace(/[.:](\d{3})$/, ',$1');
+      const normalizedEndTime = endTime.replace(/[.:](\d{3})$/, ',$1');
+      
+      // Split content for translations
+      const contentLines = content.trim().split(/\s{2,}|\n+/);
+      
+      if (hasTranslation && contentLines.length >= 2) {
+        subtitles.push({
+          sequence: parseInt(sequence),
+          startTime: normalizedStartTime,
+          endTime: normalizedEndTime,
+          text: contentLines[0].trim(),
+          translation: contentLines[1].trim()
+        });
+      } else {
+        subtitles.push({
+          sequence: parseInt(sequence),
+          startTime: normalizedStartTime,
+          endTime: normalizedEndTime,
+          text: contentLines.join(' ').trim()
+        });
+      }
+    }
+    
+    // If no matches, try a simpler pattern for really malformed text
+    if (subtitles.length === 0) {
+      const simplePattern = /(\d+).*?(\d{2}:\d{2}:\d{2}[,.:]\d{3}).*?(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s+(.+?)(?=\d+.*?\d{2}:\d{2}:\d{2}|$)/gs;
+      
+      while ((match = simplePattern.exec(cleanText)) !== null) {
+        const [, sequence, startTime, endTime, content] = match;
+        
+        const normalizedStartTime = startTime.replace(/[.:](\d{3})$/, ',$1');
+        const normalizedEndTime = endTime.replace(/[.:](\d{3})$/, ',$1');
+        
+        subtitles.push({
+          sequence: parseInt(sequence),
+          startTime: normalizedStartTime,
+          endTime: normalizedEndTime,
+          text: content.trim().replace(/\s+/g, ' ')
+        });
+      }
+    }
+    
+    console.log('Background: Flexible parsing extracted', subtitles.length, 'subtitles');
+    return subtitles;
+    
+  } catch (error) {
+    console.error('Background: Flexible parsing failed:', error);
+    return [];
+  }
 }
 
 // Create fallback subtitles when SRT parsing fails
