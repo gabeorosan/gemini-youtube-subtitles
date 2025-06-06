@@ -86,17 +86,22 @@ class YouTubeGeminiSubtitles {
       console.log('Content: Video found:', { title: videoTitle, duration: video.duration, url: videoUrl, translationLanguage });
 
       // Extract video information
-      const audioData = await this.extractVideoInfo(video);
+      this.showStatus('Extracting video information...', 'info');
+      const videoData = await this.extractVideoInfo(video);
       
-      console.log('Content: Video info extracted:', audioData);
+      console.log('Content: Video info extracted:', {
+        duration: videoData.duration,
+        videoId: videoData.videoId,
+        title: videoData.title
+      });
       
       const statusMessage = translationLanguage ? 
-        `Generating subtitles with ${translationLanguage} translations...` : 
-        'Generating subtitles in original language...';
+        `Analyzing YouTube video content and generating subtitles with ${translationLanguage} translations...` : 
+        `Analyzing YouTube video content and generating subtitles...`;
       this.showStatus(statusMessage, 'info');
       
       // Generate subtitles using Gemini via background script
-      const subtitles = await this.transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle);
+      const subtitles = await this.transcribeWithGemini(videoData, apiKey, translationLanguage, selectedModel, videoTitle);
       
       console.log('Content: Subtitles received:', subtitles.length, 'items');
       
@@ -118,13 +123,19 @@ class YouTubeGeminiSubtitles {
         // Get video description
         const videoDescription = document.querySelector('#description-text')?.textContent?.trim() || '';
         
-        // For this demo, we'll use video metadata instead of actual audio processing
+        // Extract YouTube video ID from URL
+        const videoId = this.extractVideoId(window.location.href);
+        
         const videoInfo = {
           duration: video.duration,
           currentTime: video.currentTime,
           title: document.title,
           url: window.location.href,
-          description: videoDescription
+          videoId: videoId,
+          youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
+          description: videoDescription,
+          width: video.videoWidth,
+          height: video.videoHeight
         };
         
         resolve(videoInfo);
@@ -132,6 +143,13 @@ class YouTubeGeminiSubtitles {
         reject(new Error('Failed to extract video info: ' + error.message));
       }
     });
+  }
+
+  extractVideoId(url) {
+    // Extract video ID from various YouTube URL formats
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
   }
 
   async transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle) {

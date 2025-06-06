@@ -73,9 +73,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Function to handle Gemini API calls from background script
-async function transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle) {
+async function transcribeWithGemini(videoData, apiKey, translationLanguage, selectedModel, videoTitle) {
   console.log('Background: Starting transcription with Gemini');
-  console.log('Background: Video data:', { title: videoTitle, duration: audioData.duration, model: selectedModel, translationLanguage });
+  console.log('Background: Video data:', { 
+    title: videoTitle, 
+    duration: videoData.duration, 
+    model: selectedModel, 
+    translationLanguage,
+    videoId: videoData.videoId,
+    youtubeUrl: videoData.youtubeUrl
+  });
   
   try {
     // Validate inputs
@@ -87,25 +94,37 @@ async function transcribeWithGemini(audioData, apiKey, translationLanguage, sele
       throw new Error('Model selection is required');
     }
     
-    // Since we can't actually process audio in a browser extension easily,
-    // we'll use the video title and description to generate contextual subtitles
-    const videoDescription = audioData.description || '';
-    const videoLength = Math.floor(audioData.duration) || 60; // Default to 60 seconds if duration is invalid
+    if (!videoData.videoId) {
+      throw new Error('Could not extract YouTube video ID from URL');
+    }
     
-    console.log('Background: Preparing prompt for video:', videoTitle);
+    const videoDescription = videoData.description || '';
+    const videoLength = Math.floor(videoData.duration) || 60;
+    const youtubeUrl = videoData.youtubeUrl;
+    
+    console.log('Background: Processing YouTube video:', youtubeUrl);
     
     const hasTranslation = translationLanguage && translationLanguage.trim();
     
-    let prompt;
+    // Create multimodal prompt with YouTube URL
+    const parts = [];
+    
+    // Add YouTube URL for direct video analysis
+    parts.push({
+      text: youtubeUrl
+    });
+    
+    // Add text prompt for subtitle generation
+    let textPrompt;
     if (hasTranslation) {
-      prompt = `Generate realistic subtitles for a YouTube video with the following details:
+      textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
+
+Video Details:
 Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. 
-
-IMPORTANT: Generate subtitles in the video's original language first, then provide translations in ${translationLanguage}.
+Generate subtitles in SRT format with appropriate timing based on the actual video content. Create subtitles in the video's original language first, then provide translations in ${translationLanguage}.
 
 For each subtitle entry, provide BOTH the original text AND the translation in this format:
 [sequence number]
@@ -124,14 +143,16 @@ Welcome to this amazing video!
 Today we'll be exploring...
 Hoy vamos a explorar...
 
-Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.`;
+Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing based on the actual video analysis.`;
     } else {
-      prompt = `Generate realistic subtitles for a YouTube video with the following details:
+      textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
+
+Video Details:
 Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. Generate the subtitles in the video's original language (detect from title/description).
+Generate subtitles in SRT format with appropriate timing based on the actual video content. Create subtitles in the video's original language (detect from the actual video content).
 
 Format each subtitle as:
 [sequence number]
@@ -147,17 +168,17 @@ Welcome to this amazing video!
 00:00:03,000 --> 00:00:06,000
 Today we'll be exploring...
 
-Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.`;
+Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing based on the actual video analysis.`;
     }
+    
+    parts.push({ text: textPrompt });
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
     console.log('Background: Making API request to:', apiUrl.replace(apiKey, '[API_KEY_HIDDEN]'));
 
     const requestBody = {
       contents: [{
-        parts: [{
-          text: prompt
-        }]
+        parts: parts
       }],
       generationConfig: {
         temperature: 0.7,
@@ -181,7 +202,6 @@ Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segm
       const errorText = await response.text();
       console.error('Background: Gemini API Error Response:', errorText);
       
-      // Parse error for better user feedback
       try {
         const errorData = JSON.parse(errorText);
         const errorMessage = errorData.error?.message || errorText;
@@ -216,7 +236,6 @@ Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segm
   } catch (error) {
     console.error('Background: Transcription error:', error);
     
-    // Provide more specific error messages
     if (error.message.includes('fetch')) {
       throw new Error('Network error: Unable to connect to Gemini API. Please check your internet connection.');
     } else if (error.message.includes('API_KEY_INVALID')) {
@@ -228,6 +247,8 @@ Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segm
     }
   }
 }
+
+
 
 // Function to parse SRT format
 function parseSRTFormat(srtText, hasTranslation = false) {

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YouTube Gemini Subtitles",
-  "version": "1.4.0",
-  "description": "Generate subtitles for YouTube videos using Google Gemini AI",
+  "version": "1.5.0",
+  "description": "Generate accurate subtitles for YouTube videos using Google Gemini AI with visual analysis",
   "permissions": [
     "activeTab",
     "storage",

@@ -77,10 +77,11 @@ You can enter any language name in the target language field. Examples:
 
 ## How It Works
 
-1. **Video Analysis**: The extension analyzes the YouTube video's title, description, and metadata
-2. **AI Processing**: Sends contextual information to Google Gemini AI
-3. **Subtitle Generation**: Gemini generates realistic, timed subtitles based on the video content
-4. **Display**: Subtitles are formatted and displayed in an elegant overlay
+1. **Video URL Extraction**: The extension extracts the YouTube video URL from the current page
+2. **Direct Video Analysis**: Sends the YouTube URL directly to Gemini's multimodal API
+3. **AI Processing**: Gemini analyzes the actual video content, audio, and visual elements
+4. **Subtitle Generation**: Gemini generates accurate, timed subtitles based on real video analysis
+5. **Display**: Subtitles are formatted and displayed in an elegant overlay
 
 ## Technical Details
 
@@ -109,10 +110,11 @@ youtube-gemini-subtitles/
 
 ## Limitations
 
-- **Audio Processing**: Currently generates subtitles based on video metadata rather than actual audio analysis
+- **Direct Video Analysis**: Analyzes actual YouTube video content via URL (much more accurate than metadata-only)
 - **API Costs**: Gemini API usage may incur costs based on Google's pricing
 - **Rate Limits**: Subject to Gemini API rate limits
 - **YouTube Only**: Only works on YouTube video pages
+- **Processing Time**: Real video analysis takes longer than metadata-only but provides significantly better accuracy
 
 ## Privacy & Security
 

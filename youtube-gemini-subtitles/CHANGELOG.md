@@ -1,5 +1,37 @@
 # Changelog - YouTube Gemini Subtitles
 
+## Version 1.5.0 - Real Video Analysis via YouTube URL (2025-06-06)
+
+### 🎬 MAJOR ENHANCEMENT: Direct YouTube Video Processing
+- **🎯 YouTube URL Analysis**: Now sends YouTube URLs directly to Gemini for real video content analysis
+- **🤖 Native Multimodal AI**: Uses Gemini's built-in YouTube video processing capabilities
+- **📊 Enhanced Accuracy**: Subtitles now reflect actual video content including audio, visual, and contextual elements
+- **⚡ Simplified Architecture**: No complex frame capture or file uploads needed
+
+### 🔧 Technical Implementation
+- **🔗 Smart URL Extraction**: Extracts YouTube video ID from various URL formats
+- **📡 Direct API Integration**: Sends YouTube URL directly to Gemini's multimodal API
+- **🎥 Real Content Analysis**: Gemini processes actual video audio, visuals, and timing
+- **🛡️ Robust Fallbacks**: Graceful degradation to metadata-only if URL processing fails
+
+### 🎨 User Experience Improvements
+- **📱 Cleaner Status Messages**: Shows video analysis progress without complex frame capture details
+- **⏱️ Efficient Processing**: Faster than frame-based approach while maintaining high accuracy
+- **🔍 Better Feedback**: Clear indication of real video content analysis
+
+### 🚀 Performance & Reliability
+- **⚡ Faster Processing**: No frame capture or file upload overhead
+- **💰 Cost Efficient**: No file upload API costs, only content generation
+- **🔧 Simpler Maintenance**: Reduced complexity with fewer potential failure points
+- **📈 Higher Success Rate**: Leverages Gemini's native YouTube processing capabilities
+
+### 📚 Documentation Updates
+- **📖 Updated Implementation Guide**: Reflects new YouTube URL approach
+- **🧪 Simplified Testing**: Easier testing without complex frame capture
+- **📋 Clear Migration Path**: Seamless upgrade from previous versions
+
+---
+
 ## Version 1.4.0 - Smart Language Detection & Keyboard Shortcuts (2025-06-06)
 
 ### 🌟 NEW FEATURES
