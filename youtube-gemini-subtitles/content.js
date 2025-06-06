@@ -59,6 +59,8 @@ class YouTubeGeminiSubtitles {
   }
 
   async generateSubtitles(apiKey, targetLanguage, selectedModel) {
+    console.log('Content: Starting subtitle generation');
+    
     if (this.isGenerating) {
       this.showStatus('Already generating subtitles...', 'info');
       return;
@@ -66,164 +68,110 @@ class YouTubeGeminiSubtitles {
 
     this.isGenerating = true;
     this.showSubtitleContainer();
-    this.showStatus('Extracting video audio...', 'info');
+    this.showStatus('Extracting video information...', 'info');
 
     try {
       // Get video element
       const video = document.querySelector('video');
       if (!video) {
-        throw new Error('No video found on this page');
+        throw new Error('No video found on this page. Please make sure you are on a YouTube video page.');
       }
 
       // Get video title and URL
-      const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim() || 'YouTube Video';
+      const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim() || 
+                        document.querySelector('h1.title')?.textContent?.trim() || 
+                        document.title || 'YouTube Video';
       const videoUrl = window.location.href;
 
-      // Extract audio using Web Audio API
-      const audioData = await this.extractAudioFromVideo(video);
+      console.log('Content: Video found:', { title: videoTitle, duration: video.duration, url: videoUrl });
+
+      // Extract video information
+      const audioData = await this.extractVideoInfo(video);
+      
+      console.log('Content: Video info extracted:', audioData);
       
       this.showStatus('Transcribing with Gemini...', 'info');
       
-      // Generate subtitles using Gemini
+      // Generate subtitles using Gemini via background script
       const subtitles = await this.transcribeWithGemini(audioData, apiKey, targetLanguage, selectedModel, videoTitle);
+      
+      console.log('Content: Subtitles received:', subtitles.length, 'items');
       
       this.currentSubtitles = subtitles;
       this.displaySubtitles(subtitles);
       this.showStatus('Subtitles generated successfully!', 'success');
 
     } catch (error) {
-      console.error('Error generating subtitles:', error);
+      console.error('Content: Error generating subtitles:', error);
       this.showStatus('Error: ' + error.message, 'error');
     } finally {
       this.isGenerating = false;
     }
   }
 
-  async extractAudioFromVideo(video) {
+  async extractVideoInfo(video) {
     return new Promise((resolve, reject) => {
       try {
-        // Create audio context
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaElementSource(video);
-        const analyser = audioContext.createAnalyser();
+        // Get video description
+        const videoDescription = document.querySelector('#description-text')?.textContent?.trim() || '';
         
-        source.connect(analyser);
-        analyser.connect(audioContext.destination);
-        
-        // For this demo, we'll use a simplified approach
-        // In a real implementation, you'd need to capture actual audio data
-        const audioInfo = {
+        // For this demo, we'll use video metadata instead of actual audio processing
+        const videoInfo = {
           duration: video.duration,
           currentTime: video.currentTime,
           title: document.title,
-          url: window.location.href
+          url: window.location.href,
+          description: videoDescription
         };
         
-        resolve(audioInfo);
+        resolve(videoInfo);
       } catch (error) {
-        reject(new Error('Failed to extract audio: ' + error.message));
+        reject(new Error('Failed to extract video info: ' + error.message));
       }
     });
   }
 
   async transcribeWithGemini(audioData, apiKey, targetLanguage, selectedModel, videoTitle) {
-    try {
-      // Since we can't actually process audio in a browser extension easily,
-      // we'll use the video title and description to generate contextual subtitles
-      const videoDescription = document.querySelector('#description-text')?.textContent?.trim() || '';
-      const videoLength = Math.floor(audioData.duration);
-      
-      const prompt = `Generate realistic subtitles for a YouTube video with the following details:
-Title: "${videoTitle}"
-Description: "${videoDescription}"
-Duration: ${videoLength} seconds
-Target Language: ${targetLanguage}
-
-Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. The subtitles should be in ${targetLanguage} language. Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
-
-Format each subtitle as:
-[sequence number]
-[start time] --> [end time]
-[subtitle text in ${targetLanguage}]
-
-Example format:
-1
-00:00:00,000 --> 00:00:03,000
-Welcome to this amazing video!
-
-2
-00:00:03,000 --> 00:00:06,000
-Today we'll be exploring...
-
-Important: Generate all subtitle text in ${targetLanguage} language.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API Error Response:', errorText);
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('Gemini API Response:', data);
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!generatedText) {
-        throw new Error('No response from Gemini API');
-      }
-
-      // Parse the SRT format
-      return this.parseSRTFormat(generatedText);
-
-    } catch (error) {
-      throw new Error('Failed to transcribe with Gemini: ' + error.message);
-    }
-  }
-
-  parseSRTFormat(srtText) {
-    const subtitles = [];
-    const blocks = srtText.split(/\n\s*\n/).filter(block => block.trim());
+    console.log('Content: Sending transcription request to background script');
     
-    blocks.forEach(block => {
-      const lines = block.trim().split('\n');
-      if (lines.length >= 3) {
-        const sequence = parseInt(lines[0]);
-        const timeLine = lines[1];
-        const text = lines.slice(2).join('\n');
-        
-        const timeMatch = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
-        if (timeMatch) {
-          subtitles.push({
-            sequence,
-            startTime: timeMatch[1],
-            endTime: timeMatch[2],
-            text: text.trim()
-          });
+    return new Promise((resolve, reject) => {
+      // Send message to background script to handle the API call
+      const message = {
+        action: 'transcribeWithGemini',
+        data: audioData,
+        apiKey: apiKey,
+        targetLanguage: targetLanguage,
+        selectedModel: selectedModel,
+        videoTitle: videoTitle
+      };
+      
+      console.log('Content: Message to background:', { ...message, apiKey: '[HIDDEN]' });
+      
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Content: Chrome runtime error:', chrome.runtime.lastError);
+          reject(new Error('Extension communication error: ' + chrome.runtime.lastError.message));
+          return;
         }
-      }
+        
+        if (!response) {
+          console.error('Content: No response from background script');
+          reject(new Error('No response from background script. Please try reloading the extension.'));
+          return;
+        }
+        
+        console.log('Content: Response from background:', { success: response.success, dataLength: response.data?.length });
+        
+        if (response.success) {
+          resolve(response.data);
+        } else {
+          reject(new Error(response.error || 'Unknown error from background script'));
+        }
+      });
     });
-    
-    return subtitles;
   }
+
+
 
   displaySubtitles(subtitles) {
     const subtitlesText = this.subtitleContainer.querySelector('.gemini-subtitles-text');

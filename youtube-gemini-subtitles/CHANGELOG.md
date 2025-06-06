@@ -1,5 +1,30 @@
 # Changelog - YouTube Gemini Subtitles
 
+## Version 1.3.0 - CORS and Communication Fixes (2025-06-06)
+
+### 🚨 MAJOR FIXES - "Failed to fetch" Error Resolved
+- **FIXED**: "Failed to fetch" error that prevented subtitle generation
+- **FIXED**: CORS issues by moving API calls from content script to background script
+- **FIXED**: Extension communication errors and reliability issues
+- **FIXED**: Better error handling with specific user guidance
+
+### 🔧 Technical Improvements
+- **Background Script API Calls**: Moved all Gemini API requests to background script (service worker)
+- **Enhanced Logging**: Added comprehensive console logging for debugging
+- **Better Error Messages**: Specific error messages for common issues (invalid API key, quota exceeded, network errors)
+- **Input Validation**: Improved validation of API keys and model selection
+- **Communication Reliability**: Better handling of extension message passing
+
+### 📚 Documentation & Debugging
+- **Added TROUBLESHOOTING.md**: Comprehensive guide for common issues
+- **Enhanced Logging**: Console logs throughout extension for easier debugging
+- **Better Test Page**: Improved test-api.html for API validation
+
+### 🛠️ Files Modified
+- **background.js**: Added transcribeWithGemini function with comprehensive error handling
+- **content.js**: Updated to use background script for API calls, added logging
+- **TROUBLESHOOTING.md**: New comprehensive troubleshooting guide
+
 ## Version 1.2.0 - API Fixes
 
 ### 🔧 Critical Fixes
