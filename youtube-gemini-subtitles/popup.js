@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
       // Set default model when no API key
-      modelSelect.innerHTML = '<option value="models/gemini-2.0-flash">gemini-2.0-flash (default)</option>';
-      modelSelect.value = 'models/gemini-2.0-flash';
+      modelSelect.innerHTML = '<option value="gemini-1.5-flash">gemini-1.5-flash (default)</option>';
+      modelSelect.value = 'gemini-1.5-flash';
       updateModelInfo();
       return;
     }
@@ -37,8 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       if (!response.ok) {
         // If API call fails, fall back to default model
-        console.warn(`API Error: ${response.status}, using default model`);
+        const errorText = await response.text();
+        console.warn(`API Error: ${response.status} - ${errorText}, using default model`);
         setDefaultModel();
+        showStatus('API key invalid or quota exceeded, using default model', 'info');
         return;
       }
       
@@ -60,18 +62,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Add default model first
       const defaultOption = document.createElement('option');
-      defaultOption.value = 'models/gemini-2.0-flash';
-      defaultOption.textContent = 'gemini-2.0-flash (recommended)';
+      defaultOption.value = 'gemini-1.5-flash';
+      defaultOption.textContent = 'gemini-1.5-flash (recommended)';
       modelSelect.appendChild(defaultOption);
       
       // Add other available models
       textModels.forEach(model => {
         // Skip if it's already the default model
-        if (model.name === 'models/gemini-2.0-flash') return;
+        if (model.name.includes('gemini-1.5-flash')) return;
         
         const option = document.createElement('option');
-        option.value = model.name;
-        option.textContent = model.displayName || model.name.split('/').pop();
+        // Extract just the model name without the 'models/' prefix
+        const modelName = model.name.replace('models/', '');
+        option.value = modelName;
+        option.textContent = model.displayName || modelName;
         modelSelect.appendChild(option);
       });
       
@@ -79,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (settings.selectedModel && settings.selectedModel !== '') {
         modelSelect.value = settings.selectedModel;
       } else {
-        modelSelect.value = 'models/gemini-2.0-flash';
+        modelSelect.value = 'gemini-1.5-flash';
       }
       
       updateModelInfo();
@@ -92,8 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function setDefaultModel() {
-    modelSelect.innerHTML = '<option value="models/gemini-2.0-flash">gemini-2.0-flash (default)</option>';
-    modelSelect.value = 'models/gemini-2.0-flash';
+    modelSelect.innerHTML = '<option value="gemini-1.5-flash">gemini-1.5-flash (default)</option>';
+    modelSelect.value = 'gemini-1.5-flash';
     updateModelInfo();
   }
 

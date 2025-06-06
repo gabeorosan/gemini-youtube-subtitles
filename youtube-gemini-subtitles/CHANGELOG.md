@@ -1,6 +1,21 @@
 # Changelog - YouTube Gemini Subtitles
 
-## Version 1.1.0 - Latest Updates
+## Version 1.2.0 - API Fixes
+
+### 🔧 Critical Fixes
+- **Fixed Gemini API endpoints**: Now using correct `v1beta` endpoints
+- **Fixed model format**: Corrected model name handling and API calls
+- **Fixed 400 errors**: Resolved API request format issues
+- **Updated default model**: Changed to `gemini-1.5-flash` (more stable)
+
+### 🛠️ Technical Improvements
+- **Correct API endpoints**: 
+  - Models: `https://generativelanguage.googleapis.com/v1beta/models`
+  - Generate: `https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`
+- **Better error handling**: Added detailed error logging and fallback mechanisms
+- **API testing page**: Added `test-api.html` for debugging API issues
+
+## Version 1.1.0 - Previous Updates
 
 ### 🔧 Fixed Issues
 - **Fixed model loading error**: Extension now gracefully handles API errors and falls back to default model

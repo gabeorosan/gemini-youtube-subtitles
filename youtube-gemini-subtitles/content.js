@@ -157,7 +157,7 @@ Today we'll be exploring...
 
 Important: Generate all subtitle text in ${targetLanguage} language.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${selectedModel}:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,10 +178,13 @@ Important: Generate all subtitle text in ${targetLanguage} language.`;
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Gemini API Error Response:', errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Gemini API Response:', data);
       const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!generatedText) {
