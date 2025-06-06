@@ -184,14 +184,15 @@ class YouTubeGeminiSubtitles {
         
         console.log('Content: Response from background:', { 
           success: response.success, 
-          dataType: typeof response.data,
-          dataLength: response.data?.length,
-          isArray: Array.isArray(response.data),
-          firstItem: response.data?.[0]
+          subtitlesType: typeof response.subtitles,
+          subtitlesLength: response.subtitles?.length,
+          isArray: Array.isArray(response.subtitles),
+          firstItem: response.subtitles?.[0],
+          hasTranslation: response.hasTranslation
         });
         
         if (response.success) {
-          resolve(response.data);
+          resolve(response.subtitles);
         } else {
           reject(new Error(response.error || 'Unknown error from background script'));
         }
