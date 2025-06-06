@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modelInfo = document.getElementById('modelInfo');
   const generateBtn = document.getElementById('generateBtn');
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+  const customizeShortcutBtn = document.getElementById('customizeShortcutBtn');
   const status = document.getElementById('status');
 
   // Load saved settings
@@ -191,6 +192,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 3000);
     }
   }
+
+  // Shortcut customization
+  customizeShortcutBtn.addEventListener('click', () => {
+    chrome.tabs.create({
+      url: 'chrome://extensions/shortcuts'
+    });
+  });
+
+  // Options page
+  const optionsBtn = document.getElementById('optionsBtn');
+  optionsBtn.addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
+  });
 
   // Load models on startup (will use default if no API key)
   loadModels();

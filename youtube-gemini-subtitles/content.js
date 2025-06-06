@@ -202,23 +202,38 @@ class YouTubeGeminiSubtitles {
       const subtitleElement = document.createElement('div');
       subtitleElement.className = 'subtitle-item';
       
+      // Format timing for better readability
+      const formatTime = (timeStr) => {
+        // Convert HH:MM:SS,mmm to more readable format
+        return timeStr.replace(',', '.').replace(/^00:/, '');
+      };
+      
+      const startTime = formatTime(subtitle.startTime);
+      const endTime = formatTime(subtitle.endTime);
+      
       if (subtitle.translation) {
         // Display both original and translation
         subtitleElement.innerHTML = `
-          <div class="subtitle-timing">${subtitle.startTime} → ${subtitle.endTime}</div>
-          <div class="subtitle-text original">${subtitle.text}</div>
-          <div class="subtitle-text translation">${subtitle.translation}</div>
+          <div class="subtitle-timing">${startTime} → ${endTime}</div>
+          <div class="subtitle-text original">${this.escapeHtml(subtitle.text)}</div>
+          <div class="subtitle-text translation">${this.escapeHtml(subtitle.translation)}</div>
         `;
       } else {
         // Display only original text
         subtitleElement.innerHTML = `
-          <div class="subtitle-timing">${subtitle.startTime} → ${subtitle.endTime}</div>
-          <div class="subtitle-text">${subtitle.text}</div>
+          <div class="subtitle-timing">${startTime} → ${endTime}</div>
+          <div class="subtitle-text">${this.escapeHtml(subtitle.text)}</div>
         `;
       }
       
       subtitlesText.appendChild(subtitleElement);
     });
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   toggleSubtitles() {

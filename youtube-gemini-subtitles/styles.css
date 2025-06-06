@@ -86,43 +86,55 @@
 }
 
 .subtitle-item {
-  margin-bottom: 15px;
-  padding: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border-left: 3px solid #667eea;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .subtitle-item:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: translateX(2px);
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .subtitle-timing {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 5px;
+  font-size: 12px;
+  color: rgba(102, 126, 234, 0.9);
+  margin-bottom: 8px;
   font-family: 'Courier New', monospace;
+  font-weight: 500;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .subtitle-text {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
   color: white;
+  word-wrap: break-word;
 }
 
 .subtitle-text.original {
   font-weight: 600;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  color: #ffffff;
 }
 
 .subtitle-text.translation {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   font-style: italic;
-  padding-left: 10px;
-  border-left: 2px solid rgba(102, 126, 234, 0.5);
+  padding: 8px 12px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid rgba(102, 126, 234, 0.6);
+  margin-top: 6px;
 }
 
 /* Custom scrollbar */

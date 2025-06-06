@@ -140,7 +140,15 @@ Welcome to this amazing video!
 Today we'll be exploring...
 Hoy vamos a explorar...
 
-Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Use the exact time format shown (HH:MM:SS,mmm --> HH:MM:SS,mmm).`;
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. 
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Use EXACTLY this time format: HH:MM:SS,mmm --> HH:MM:SS,mmm (hours:minutes:seconds,milliseconds)
+- Each subtitle must be separated by a blank line
+- Sequence numbers must be on their own line
+- Time codes must be on their own line
+- Text content must be on separate lines after the time code
+- Do NOT add any extra text, explanations, or formatting`;
     } else {
       textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
 
@@ -167,7 +175,15 @@ Welcome to this amazing video!
 00:00:03,000 --> 00:00:06,000
 Today we'll be exploring...
 
-Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Use the exact time format shown (HH:MM:SS,mmm --> HH:MM:SS,mmm).`;
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
+
+CRITICAL FORMATTING REQUIREMENTS:
+- Use EXACTLY this time format: HH:MM:SS,mmm --> HH:MM:SS,mmm (hours:minutes:seconds,milliseconds)
+- Each subtitle must be separated by a blank line
+- Sequence numbers must be on their own line
+- Time codes must be on their own line
+- Text content must be on separate lines after the time code
+- Do NOT add any extra text, explanations, or formatting`;
     }
     
     // Add text prompt first, then YouTube URL as fileData
