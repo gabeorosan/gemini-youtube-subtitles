@@ -112,82 +112,19 @@ async function transcribeWithGemini(videoData, apiKey, translationLanguage, sele
     // Add text prompt for subtitle generation using JSON structured output
     let textPrompt;
     if (hasTranslation) {
-      textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
+      textPrompt = `Analyze this YouTube video and generate accurate subtitles with ${translationLanguage} translations.
 
-Video Details:
-Title: "${videoTitle}"
-Description: "${videoDescription}"
-Duration: ${videoLength} seconds
+Video: "${videoTitle}" (${Math.floor(videoLength / 60)}:${(videoLength % 60).toString().padStart(2, '0')})
 
-CRITICAL: You MUST return ONLY a valid JSON array. No explanatory text, no markdown, no code blocks.
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Each subtitle should be 2-6 seconds long with natural speech breaks.
 
-Required JSON format with these exact properties:
-- sequence: number (1, 2, 3, etc.)
-- startTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:23,500")
-- endTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:26,800")
-- text: string (the original subtitle text)
-- translation: string (the ${translationLanguage} translation)
-
-Example format:
-[
-  {
-    "sequence": 1,
-    "startTime": "00:00:00,000",
-    "endTime": "00:00:03,000",
-    "text": "Welcome to this amazing video!",
-    "translation": "¡Bienvenidos a este increíble video!"
-  },
-  {
-    "sequence": 2,
-    "startTime": "00:00:03,000",
-    "endTime": "00:00:06,000",
-    "text": "Today we'll be exploring...",
-    "translation": "Hoy vamos a explorar..."
-  }
-]
-
-Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
-
-RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER
-
-DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON array.`;
+Provide both the original text and ${translationLanguage} translation for each subtitle segment.`;
     } else {
-      textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
+      textPrompt = `Analyze this YouTube video and generate accurate subtitles.
 
-Video Details:
-Title: "${videoTitle}"
-Description: "${videoDescription}"
-Duration: ${videoLength} seconds
+Video: "${videoTitle}" (${Math.floor(videoLength / 60)}:${(videoLength % 60).toString().padStart(2, '0')})
 
-CRITICAL: You MUST return ONLY a valid JSON array. No explanatory text, no markdown, no code blocks.
-
-Required JSON format with these exact properties:
-- sequence: number (1, 2, 3, etc.)
-- startTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:23,500")
-- endTime: string in format "HH:MM:SS,mmm" (e.g., "00:01:26,800")
-- text: string (the subtitle text in the video's original language)
-
-Example format:
-[
-  {
-    "sequence": 1,
-    "startTime": "00:00:00,000",
-    "endTime": "00:00:03,000",
-    "text": "Welcome to this amazing video!"
-  },
-  {
-    "sequence": 2,
-    "startTime": "00:00:03,000",
-    "endTime": "00:00:06,000",
-    "text": "Today we'll be exploring..."
-  }
-]
-
-Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
-
-RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER
-
-DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON array.`;
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Each subtitle should be 2-6 seconds long with natural speech breaks.`;
     }
     
     // Add text prompt first, then YouTube URL as fileData
@@ -201,15 +138,56 @@ DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON arr
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
     console.log('Background: Making API request to:', apiUrl.replace(apiKey, '[API_KEY_HIDDEN]'));
 
+    // Define schema based on whether translation is requested
+    const baseSchema = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          sequence: {
+            type: "integer",
+            description: "Sequential number starting from 1"
+          },
+          startTime: {
+            type: "string",
+            pattern: "^\\d{2}:\\d{2}:\\d{2},\\d{3}$",
+            description: "Start time in HH:MM:SS,mmm format (e.g., 00:01:23,500)"
+          },
+          endTime: {
+            type: "string", 
+            pattern: "^\\d{2}:\\d{2}:\\d{2},\\d{3}$",
+            description: "End time in HH:MM:SS,mmm format (e.g., 00:01:26,800)"
+          },
+          text: {
+            type: "string",
+            description: "Original subtitle text"
+          }
+        },
+        required: ["sequence", "startTime", "endTime", "text"],
+        additionalProperties: false
+      }
+    };
+
+    // Add translation field if needed
+    if (translationLanguage && translationLanguage !== 'none') {
+      baseSchema.items.properties.translation = {
+        type: "string",
+        description: "Translated subtitle text"
+      };
+      baseSchema.items.required.push("translation");
+    }
+
     const requestBody = {
       contents: [{
         parts: parts
       }],
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
+        temperature: 0.1,
+        topK: 1,
+        topP: 0.8,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+        responseSchema: baseSchema
       }
     };
 
@@ -249,26 +227,41 @@ DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON arr
     console.log('Background: Generated text length:', generatedText.length);
     console.log('Background: Generated text preview:', generatedText.substring(0, 500));
 
-    // Try multiple parsing strategies
+    // With structured output, try direct JSON parsing first
     let subtitles = [];
     
     try {
-      // First try JSON format
-      subtitles = parseJSONFormat(generatedText, hasTranslation);
-      console.log('Background: JSON parsing successful:', subtitles.length, 'subtitles');
-    } catch (jsonError) {
-      console.log('Background: JSON parsing failed:', jsonError.message);
+      // With structured output, the response should be valid JSON
+      subtitles = JSON.parse(generatedText);
+      
+      if (!Array.isArray(subtitles)) {
+        throw new Error('Response is not an array');
+      }
+      
+      console.log('Background: Structured JSON parsing successful:', subtitles.length, 'subtitles');
+      
+    } catch (structuredError) {
+      console.log('Background: Structured JSON parsing failed:', structuredError.message);
+      console.log('Background: Falling back to multi-strategy parsing');
       
       try {
-        // Fall back to SRT format parsing
-        subtitles = parseSRTFormat(generatedText, hasTranslation);
-        console.log('Background: SRT parsing successful:', subtitles.length, 'subtitles');
-      } catch (srtError) {
-        console.log('Background: SRT parsing also failed:', srtError.message);
+        // First try JSON format
+        subtitles = parseJSONFormat(generatedText, hasTranslation);
+        console.log('Background: JSON parsing successful:', subtitles.length, 'subtitles');
+      } catch (jsonError) {
+        console.log('Background: JSON parsing failed:', jsonError.message);
         
-        // Try to extract subtitles from malformed text
-        subtitles = parseFlexibleFormat(generatedText, hasTranslation);
-        console.log('Background: Flexible parsing result:', subtitles.length, 'subtitles');
+        try {
+          // Fall back to SRT format parsing
+          subtitles = parseSRTFormat(generatedText, hasTranslation);
+          console.log('Background: SRT parsing successful:', subtitles.length, 'subtitles');
+        } catch (srtError) {
+          console.log('Background: SRT parsing also failed:', srtError.message);
+          
+          // Try to extract subtitles from malformed text
+          subtitles = parseFlexibleFormat(generatedText, hasTranslation);
+          console.log('Background: Flexible parsing result:', subtitles.length, 'subtitles');
+        }
       }
     }
 
@@ -319,21 +312,58 @@ function parseJSONFormat(responseText, hasTranslation = false) {
     // First, try to extract JSON from the response
     let jsonText = responseText.trim();
     
-    // Remove any markdown code blocks if present
-    if (jsonText.includes('```')) {
-      const jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[1];
+    // Check for the specific malformed case where response starts with a partial JSON object
+    // containing nested JSON in the text field
+    if (jsonText.startsWith('{ "sequence": 1') && jsonText.includes('```json')) {
+      console.log('Background: Detected malformed response with nested JSON, extracting...');
+      const nestedJsonMatch = jsonText.match(/```json\s*(\[[\s\S]*)/);
+      if (nestedJsonMatch) {
+        jsonText = nestedJsonMatch[1];
+        console.log('Background: Extracted nested JSON from malformed response');
       }
     }
     
-    // Try to find JSON array in the text
-    const jsonArrayMatch = jsonText.match(/\[[\s\S]*\]/);
-    if (jsonArrayMatch) {
-      jsonText = jsonArrayMatch[0];
+    // Remove any markdown code blocks if present - be more aggressive
+    if (jsonText.includes('```')) {
+      // Try multiple patterns for code blocks
+      let jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (!jsonMatch) {
+        // Try without the closing ```
+        jsonMatch = jsonText.match(/```(?:json)?\s*(\[[\s\S]*)/);
+      }
+      if (jsonMatch) {
+        jsonText = jsonMatch[1];
+        console.log('Background: Extracted from code block');
+      }
     }
     
-    console.log('Background: Extracted JSON text:', jsonText.substring(0, 200));
+    // Try to find the most complete JSON array in the text
+    const jsonArrayMatches = jsonText.match(/\[[\s\S]*\]/g);
+    if (jsonArrayMatches && jsonArrayMatches.length > 0) {
+      // Take the longest match (most complete)
+      jsonText = jsonArrayMatches.reduce((longest, current) => 
+        current.length > longest.length ? current : longest
+      );
+    }
+    
+    // Clean up common JSON issues
+    jsonText = jsonText
+      .replace(/,\s*\]/g, ']')  // Remove trailing commas
+      .replace(/,\s*\}/g, '}')  // Remove trailing commas in objects
+      .trim();
+    
+    // If JSON appears to be truncated, try to fix it
+    if (!jsonText.endsWith(']') && !jsonText.endsWith('}')) {
+      console.log('Background: JSON appears truncated, attempting to fix');
+      
+      // Find the last complete object
+      const lastCompleteObject = jsonText.lastIndexOf('}');
+      if (lastCompleteObject !== -1) {
+        jsonText = jsonText.substring(0, lastCompleteObject + 1) + ']';
+      }
+    }
+    
+    console.log('Background: Cleaned JSON text:', jsonText.substring(0, 300));
     
     // Parse the JSON
     const subtitlesArray = JSON.parse(jsonText);
@@ -352,28 +382,90 @@ function parseJSONFormat(responseText, hasTranslation = false) {
         continue;
       }
       
+      // Handle nested JSON in text field (common Gemini issue)
+      let text = subtitle.text;
+      if (typeof text === 'string' && text.includes('```json')) {
+        console.log('Background: Found nested JSON in text field, this indicates malformed response');
+        console.log('Background: Problematic text field:', text.substring(0, 200));
+        
+        // This is a sign that Gemini returned malformed JSON where the entire JSON array
+        // is embedded in the first subtitle's text field. Extract and re-parse.
+        const nestedMatch = text.match(/```json\s*(\[[\s\S]*)/);
+        if (nestedMatch) {
+          console.log('Background: Extracting nested JSON and re-parsing entire response');
+          // Re-parse the entire response using the nested JSON
+          return parseJSONFormat(nestedMatch[1], hasTranslation);
+        }
+        
+        // If we can't extract nested JSON, clean the text field
+        text = text.replace(/```json[\s\S]*?```/g, '').trim();
+        if (!text) {
+          console.warn('Background: Text field became empty after cleaning nested JSON');
+          continue; // Skip this subtitle
+        }
+      }
+      
       // Validate required properties
-      if (!subtitle.startTime || !subtitle.endTime || !subtitle.text) {
+      if (!subtitle.startTime || !subtitle.endTime || !text) {
         console.warn(`Background: Missing required properties in subtitle ${i + 1}:`, subtitle);
         continue;
       }
       
+      // Normalize time format
+      const normalizeTime = (timeStr) => {
+        if (!timeStr) return '00:00:00,000';
+        
+        // Handle various time formats
+        let normalized = timeStr.toString().replace(/\./g, ',');
+        
+        // Check if this looks like HH:MM:SSS format (where SSS should be SS.S)
+        const hmmSssPattern = /^(\d{1,2}):(\d{2}):(\d{3})$/;
+        const hmmSssMatch = normalized.match(hmmSssPattern);
+        
+        if (hmmSssMatch) {
+          const [, hours, minutes, sssValue] = hmmSssMatch;
+          // Convert SSS to SS,mmm format (treat as seconds.milliseconds)
+          const totalMs = parseInt(sssValue);
+          const seconds = Math.floor(totalMs / 100);
+          const milliseconds = (totalMs % 100) * 10; // Convert to 3-digit milliseconds
+          normalized = `${hours.padStart(2, '0')}:${minutes}:${seconds.toString().padStart(2, '0')},${milliseconds.toString().padStart(3, '0')}`;
+          return normalized;
+        }
+        
+        // Ensure proper millisecond format
+        const parts = normalized.split(',');
+        if (parts.length === 2) {
+          let ms = parts[1];
+          if (ms.length === 1) ms += '00';
+          else if (ms.length === 2) ms += '0';
+          else if (ms.length > 3) ms = ms.substring(0, 3);
+          normalized = parts[0] + ',' + ms;
+        } else if (!normalized.includes(',')) {
+          normalized += ',000';
+        }
+        
+        return normalized;
+      };
+      
       // Normalize the subtitle object
       const normalizedSubtitle = {
         sequence: subtitle.sequence || (i + 1),
-        startTime: subtitle.startTime,
-        endTime: subtitle.endTime,
-        text: subtitle.text
+        startTime: normalizeTime(subtitle.startTime),
+        endTime: normalizeTime(subtitle.endTime),
+        text: text.trim()
       };
       
       if (hasTranslation && subtitle.translation) {
-        normalizedSubtitle.translation = subtitle.translation;
+        normalizedSubtitle.translation = subtitle.translation.trim();
       }
       
       validSubtitles.push(normalizedSubtitle);
     }
     
     console.log('Background: Successfully parsed JSON format:', validSubtitles.length, 'subtitles');
+    if (validSubtitles.length > 0) {
+      console.log('Background: First subtitle sample:', validSubtitles[0]);
+    }
     return validSubtitles;
     
   } catch (error) {
