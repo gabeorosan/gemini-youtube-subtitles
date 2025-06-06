@@ -69,18 +69,11 @@ A Chrome extension that uses Google's Gemini AI to generate subtitles for YouTub
 
 ## Supported Languages
 
-- English (en)
-- Spanish (es)
-- French (fr)
-- German (de)
-- Italian (it)
-- Portuguese (pt)
-- Russian (ru)
-- Japanese (ja)
-- Korean (ko)
-- Chinese (zh)
-- Arabic (ar)
-- Hindi (hi)
+You can enter any language name in the target language field. Examples:
+- English, Spanish, French, German, Italian
+- Portuguese, Russian, Japanese, Korean, Chinese
+- Arabic, Hindi, Dutch, Swedish, Norwegian
+- Or any other language supported by Gemini AI
 
 ## How It Works
 

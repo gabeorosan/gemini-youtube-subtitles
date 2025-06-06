@@ -14,13 +14,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   if (settings.targetLanguage) {
     targetLanguageSelect.value = settings.targetLanguage;
+  } else {
+    targetLanguageSelect.value = 'English'; // Default to English
   }
 
   // Load models when API key is available
   async function loadModels() {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
-      modelSelect.innerHTML = '<option value="">Enter API key first</option>';
+      // Set default model when no API key
+      modelSelect.innerHTML = '<option value="models/gemini-2.0-flash">gemini-2.0-flash (default)</option>';
+      modelSelect.value = 'models/gemini-2.0-flash';
+      updateModelInfo();
       return;
     }
 
@@ -31,7 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
       
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        // If API call fails, fall back to default model
+        console.warn(`API Error: ${response.status}, using default model`);
+        setDefaultModel();
+        return;
       }
       
       const data = await response.json();
@@ -46,32 +54,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       modelSelect.innerHTML = '';
       
       if (textModels.length === 0) {
-        modelSelect.innerHTML = '<option value="">No compatible models found</option>';
+        setDefaultModel();
         return;
       }
       
+      // Add default model first
+      const defaultOption = document.createElement('option');
+      defaultOption.value = 'models/gemini-2.0-flash';
+      defaultOption.textContent = 'gemini-2.0-flash (recommended)';
+      modelSelect.appendChild(defaultOption);
+      
+      // Add other available models
       textModels.forEach(model => {
+        // Skip if it's already the default model
+        if (model.name === 'models/gemini-2.0-flash') return;
+        
         const option = document.createElement('option');
         option.value = model.name;
         option.textContent = model.displayName || model.name.split('/').pop();
         modelSelect.appendChild(option);
       });
       
-      // Restore selected model
-      if (settings.selectedModel) {
+      // Restore selected model or use default
+      if (settings.selectedModel && settings.selectedModel !== '') {
         modelSelect.value = settings.selectedModel;
       } else {
-        // Default to first available model
-        modelSelect.selectedIndex = 0;
+        modelSelect.value = 'models/gemini-2.0-flash';
       }
       
       updateModelInfo();
       
     } catch (error) {
       console.error('Error loading models:', error);
-      modelSelect.innerHTML = '<option value="">Error loading models</option>';
-      showStatus('Error loading models: ' + error.message, 'error');
+      setDefaultModel();
+      showStatus('Using default model (API unavailable)', 'info');
     }
+  }
+
+  function setDefaultModel() {
+    modelSelect.innerHTML = '<option value="models/gemini-2.0-flash">gemini-2.0-flash (default)</option>';
+    modelSelect.value = 'models/gemini-2.0-flash';
+    updateModelInfo();
   }
 
   function updateModelInfo() {
@@ -163,8 +186,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Load models on startup if API key is available
-  if (settings.apiKey) {
-    loadModels();
-  }
+  // Load models on startup (will use default if no API key)
+  loadModels();
 });

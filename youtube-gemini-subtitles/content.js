@@ -139,21 +139,23 @@ Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 Target Language: ${targetLanguage}
 
-Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
+Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. The subtitles should be in ${targetLanguage} language. Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
 
 Format each subtitle as:
 [sequence number]
 [start time] --> [end time]
-[subtitle text]
+[subtitle text in ${targetLanguage}]
 
-Example:
+Example format:
 1
 00:00:00,000 --> 00:00:03,000
 Welcome to this amazing video!
 
 2
 00:00:03,000 --> 00:00:06,000
-Today we'll be exploring...`;
+Today we'll be exploring...
+
+Important: Generate all subtitle text in ${targetLanguage} language.`;
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${selectedModel}:generateContent?key=${apiKey}`, {
         method: 'POST',
