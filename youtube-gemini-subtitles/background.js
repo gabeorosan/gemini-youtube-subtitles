@@ -148,7 +148,9 @@ Example format:
 
 Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
 
-RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER`;
+RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER
+
+DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON array.`;
     } else {
       textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
 
@@ -183,7 +185,9 @@ Example format:
 
 Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
 
-RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER`;
+RESPOND WITH ONLY THE JSON ARRAY - NO OTHER TEXT WHATSOEVER
+
+DO NOT use SRT format. DO NOT include explanatory text. ONLY return the JSON array.`;
     }
     
     // Add text prompt first, then YouTube URL as fileData
