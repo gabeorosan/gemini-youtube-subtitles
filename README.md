@@ -13,11 +13,6 @@ A Chrome extension that generates subtitles for YouTube videos using Google's Ge
 
 ## Installation
 
-### From Chrome Web Store
-1. Visit the [Chrome Web Store](https://chrome.google.com/webstore)
-2. Search for "YouTube Gemini Subtitles"
-3. Click "Add to Chrome"
-
 ### Manual Installation
 1. Download the latest release from the [Releases page](https://github.com/yourusername/youtube-gemini-subtitles/releases)
 2. Extract the ZIP file
