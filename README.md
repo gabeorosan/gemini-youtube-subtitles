@@ -1,110 +1,96 @@
-# 🎬 YouTube Gemini Subtitles
+# YouTube Gemini Subtitles
 
-A Chrome extension that generates accurate subtitles for YouTube videos using Google's Gemini AI. The extension analyzes video content and generates subtitles in real-time, with optional translation support.
+A Chrome extension that generates subtitles for YouTube videos using Google's Gemini AI.
 
-## ✨ Features
+## Features
 
-- 🤖 **AI-Powered Subtitles**: Uses Google's Gemini AI to analyze video content and generate accurate subtitles
-- 🌍 **Translation Support**: Optional translation of subtitles into any language
-- ⌨️ **Keyboard Shortcuts**: Quick access with customizable keyboard shortcuts
-- 💾 **SRT Export**: Download generated subtitles in SRT format
-- 🎨 **Customizable Display**: Adjust subtitle position, size, and appearance
-- 🔄 **Real-time Generation**: Generate subtitles while watching videos
+- 🔍 **Smart Video Analysis**: Uses Gemini AI to analyze video content and generate accurate subtitles
+- 🌍 **Multi-language Support**: Generate subtitles in any language
+- ⚡ **Real-time Generation**: Get subtitles instantly while watching
+- 🎯 **High Accuracy**: Advanced AI model understands context and nuances
+- 🔑 **Easy Setup**: Just add your Gemini API key and start using
+- ⌨️ **Keyboard Shortcut**: Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux) to generate subtitles
 
-## 🚀 Installation
+## Installation
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/youtube-gemini-subtitles.git
-   ```
+### From Chrome Web Store
+1. Visit the [Chrome Web Store](https://chrome.google.com/webstore)
+2. Search for "YouTube Gemini Subtitles"
+3. Click "Add to Chrome"
 
-2. Open Chrome and go to `chrome://extensions/`
+### Manual Installation
+1. Download the latest release from the [Releases page](https://github.com/yourusername/youtube-gemini-subtitles/releases)
+2. Extract the ZIP file
+3. Open Chrome and go to `chrome://extensions/`
+4. Enable "Developer mode" in the top right
+5. Click "Load unpacked" and select the extracted folder
 
-3. Enable "Developer mode" in the top right
+## Setup
 
-4. Click "Load unpacked" and select the `youtube-gemini-subtitles` directory
+1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Click the extension icon in Chrome
+3. Enter your API key in the settings
+4. (Optional) Choose your preferred language
 
-5. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+## Usage
 
-6. Click the extension icon and enter your API key
-
-## 🎯 Usage
-
-1. Navigate to any YouTube video
-2. Click the extension icon or use the keyboard shortcut (default: `Cmd+Shift+P` on Mac, `Ctrl+Shift+P` on Windows/Linux)
+1. Go to any YouTube video
+2. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
 3. Wait for the subtitles to generate
-4. Use the controls to:
-   - Toggle subtitle visibility
-   - Download subtitles as SRT
-   - Close the subtitle panel
+4. Enjoy your subtitles!
 
-## ⚙️ Configuration
+## Configuration
 
-Access the options page by clicking the ⚙️ button in the popup to configure:
+### Language Settings
+- **Target Language**: Choose the language for subtitles
+- **Translation**: Optional second language for translations
 
-- Default Gemini model
-- Translation language
-- Subtitle display preferences
-- Keyboard shortcuts
+### Model Selection
+- **Default**: `gemini-2.0-flash` (fastest)
+- **Alternative**: `gemini-1.5-pro` (more accurate)
 
-## 🛠️ Development
+## Troubleshooting
 
-### Project Structure
+### Common Issues
 
-```
-youtube-gemini-subtitles/
-├── src/                    # Source code
-│   ├── content.js         # Content script for YouTube pages
-│   ├── background.js      # Background service worker
-│   ├── popup.js           # Popup UI logic
-│   ├── popup.html         # Popup UI
-│   ├── options.js         # Options page logic
-│   ├── options.html       # Options page UI
-│   └── styles.css         # Shared styles
-├── assets/                # Static assets
-│   └── icons/            # Extension icons
-├── docs/                  # Documentation
-├── tests/                 # Test files
-└── manifest.json          # Extension manifest
-```
+1. **No Subtitles Appearing**
+   - Check if the video is playing
+   - Verify your API key is correct
+   - Try refreshing the page
 
-### Building from Source
+2. **API Key Issues**
+   - Ensure your API key is valid
+   - Check if you've exceeded your quota
+   - Verify the key is properly saved
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+3. **Generation Errors**
+   - Check your internet connection
+   - Try a different video
+   - Clear browser cache
 
-2. Build the extension:
-   ```bash
-   npm run build
-   ```
-
-3. Load the `dist` directory as an unpacked extension in Chrome
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -am 'Add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Submit a pull request
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Google Gemini AI for providing the AI capabilities
+- Google Gemini AI for the powerful language model
 - YouTube for the video platform
-- All contributors who have helped improve this extension
+- All contributors and users
 
-## 📚 Documentation
+## Support
 
-For detailed documentation, see the [docs](docs/) directory:
+- Report issues on [GitHub Issues](https://github.com/yourusername/youtube-gemini-subtitles/issues)
+- Join our [Discord community](https://discord.gg/your-server)
+- Follow updates on [Twitter](https://twitter.com/your-handle)
 
-- [API Documentation](docs/API.md)
-- [User Guide](docs/USER_GUIDE.md)
-- [Development Guide](docs/DEVELOPMENT.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md) 
+---
+
+Made with ❤️ by [Your Name] 
