@@ -102,15 +102,29 @@
 }
 
 .subtitle-timing {
-  font-size: 12px;
-  color: rgba(102, 126, 234, 0.9);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 8px;
   font-family: 'Courier New', monospace;
-  font-weight: 500;
-  background: rgba(102, 126, 234, 0.1);
-  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timing-badge {
+  background: rgba(102, 126, 234, 0.3);
+  color: #667eea;
+  padding: 2px 6px;
   border-radius: 4px;
-  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.timing-range {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .subtitle-text {

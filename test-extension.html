@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chrome Extension</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .youtube-link {
+            display: inline-block;
+            background: #ff0000;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .youtube-link:hover {
+            background: #cc0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Gemini Subtitles Extension Test</h1>
+        
+        <div class="instructions">
+            <h2>📋 Testing Instructions</h2>
+            <p>Follow these steps to test the Chrome extension:</p>
+            
+            <div class="step">
+                <strong>Step 1:</strong> Load the extension in Chrome
+                <ul>
+                    <li>Open Chrome and go to <code>chrome://extensions/</code></li>
+                    <li>Enable "Developer mode" (toggle in top right)</li>
+                    <li>Click "Load unpacked" and select the <code>youtube-gemini-subtitles</code> folder</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <strong>Step 2:</strong> Test on a YouTube video
+                <ul>
+                    <li>Click the link below to open a test video</li>
+                    <li>Set up your API key in the extension popup</li>
+                    <li>Use the hotkey <kbd>Cmd+Shift+P</kbd> (Mac) or <kbd>Ctrl+Shift+P</kbd> (Windows/Linux)</li>
+                    <li>Check the browser console for debugging information</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <strong>Step 3:</strong> Check the console output
+                <ul>
+                    <li>Open Developer Tools (F12)</li>
+                    <li>Look for messages starting with "Content:" and "Background:"</li>
+                    <li>Check if subtitles are received as array or string</li>
+                </ul>
+            </div>
+        </div>
+        
+        <h2>🎥 Test Videos</h2>
+        <p>Use these short videos for testing:</p>
+        
+        <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" class="youtube-link" target="_blank">
+            🎵 Test Video 1 (Short music video)
+        </a>
+        
+        <a href="https://www.youtube.com/watch?v=jNQXAC9IVRw" class="youtube-link" target="_blank">
+            🎤 Test Video 2 (Short talk)
+        </a>
+        
+        <h2>🔍 Debugging Checklist</h2>
+        <ul>
+            <li>✅ Extension loads without errors</li>
+            <li>✅ API key is saved correctly</li>
+            <li>✅ Hotkey triggers the extension</li>
+            <li>✅ Background script receives the request</li>
+            <li>✅ Gemini API call succeeds</li>
+            <li>✅ SRT parsing works correctly</li>
+            <li>✅ Subtitles display with proper formatting</li>
+        </ul>
+        
+        <h2>🐛 Common Issues</h2>
+        <ul>
+            <li><strong>Raw text display:</strong> Check if subtitles are returned as string instead of array</li>
+            <li><strong>Parsing errors:</strong> Check console for SRT parsing issues</li>
+            <li><strong>API errors:</strong> Verify API key and model availability</li>
+            <li><strong>Hotkey not working:</strong> Check Chrome extension shortcuts settings</li>
+        </ul>
+    </div>
+</body>
+</html>

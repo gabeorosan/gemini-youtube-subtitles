@@ -255,12 +255,24 @@ CRITICAL FORMATTING REQUIREMENTS:
       // Try to create basic subtitles from the generated text as fallback
       const fallbackSubtitles = createFallbackSubtitles(generatedText, videoLength, hasTranslation);
       if (fallbackSubtitles.length > 0) {
-        console.log('Background: Using fallback subtitles:', fallbackSubtitles.length);
+        console.log('Background: Using fallback subtitles:', {
+          type: typeof fallbackSubtitles,
+          isArray: Array.isArray(fallbackSubtitles),
+          length: fallbackSubtitles.length,
+          firstItem: fallbackSubtitles[0]
+        });
         return fallbackSubtitles;
       }
       
       throw new Error('Failed to parse generated subtitles. The AI may have generated content in an unexpected format. Please try again.');
     }
+    
+    console.log('Background: Returning subtitles array:', {
+      type: typeof subtitles,
+      isArray: Array.isArray(subtitles),
+      length: subtitles.length,
+      firstItem: subtitles[0]
+    });
     
     return subtitles;
 

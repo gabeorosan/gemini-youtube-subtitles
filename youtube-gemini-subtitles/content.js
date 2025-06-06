@@ -104,6 +104,7 @@ class YouTubeGeminiSubtitles {
       const subtitles = await this.transcribeWithGemini(videoData, apiKey, translationLanguage, selectedModel, videoTitle);
       
       console.log('Content: Subtitles received:', subtitles.length, 'items');
+      console.log('Content: First subtitle sample:', subtitles[0]);
       
       this.currentSubtitles = subtitles;
       this.displaySubtitles(subtitles);
@@ -181,7 +182,13 @@ class YouTubeGeminiSubtitles {
           return;
         }
         
-        console.log('Content: Response from background:', { success: response.success, dataLength: response.data?.length });
+        console.log('Content: Response from background:', { 
+          success: response.success, 
+          dataType: typeof response.data,
+          dataLength: response.data?.length,
+          isArray: Array.isArray(response.data),
+          firstItem: response.data?.[0]
+        });
         
         if (response.success) {
           resolve(response.data);
@@ -195,15 +202,68 @@ class YouTubeGeminiSubtitles {
 
 
   displaySubtitles(subtitles) {
+    console.log('Content: displaySubtitles called with:', {
+      type: typeof subtitles,
+      isArray: Array.isArray(subtitles),
+      length: subtitles?.length,
+      firstItem: subtitles?.[0]
+    });
+
     const subtitlesText = this.subtitleContainer.querySelector('.gemini-subtitles-text');
     subtitlesText.innerHTML = '';
     
-    subtitles.forEach(subtitle => {
+    // Handle case where subtitles might be a string instead of array
+    if (typeof subtitles === 'string') {
+      console.error('Content: Received string instead of array. This should not happen. Raw text:', subtitles.substring(0, 200));
+      subtitlesText.innerHTML = `<div class="subtitle-item">
+        <div class="subtitle-text">Error: Received raw text instead of parsed subtitles.</div>
+        <div class="subtitle-text">This indicates a parsing issue in the background script.</div>
+        <div class="subtitle-text">Please check the browser console for details.</div>
+      </div>`;
+      return;
+    }
+    
+    if (!Array.isArray(subtitles)) {
+      console.error('Content: Subtitles is not an array:', subtitles);
+      subtitlesText.innerHTML = `<div class="subtitle-item"><div class="subtitle-text">Error: Invalid subtitle format</div></div>`;
+      return;
+    }
+    
+    // Add debug info at the top
+    const debugElement = document.createElement('div');
+    debugElement.className = 'subtitle-item';
+    debugElement.style.background = 'rgba(255, 0, 0, 0.1)';
+    debugElement.style.border = '1px solid red';
+    debugElement.innerHTML = `
+      <div class="subtitle-text" style="font-size: 12px; color: #ff6b6b;">
+        🐛 DEBUG INFO: Received ${subtitles.length} subtitle objects
+        <br>First subtitle: ${JSON.stringify(subtitles[0], null, 2)}
+      </div>
+    `;
+    subtitlesText.appendChild(debugElement);
+
+    subtitles.forEach((subtitle, index) => {
+      console.log(`Content: Processing subtitle ${index + 1}:`, subtitle);
+      
+      // Validate subtitle object structure
+      if (!subtitle || typeof subtitle !== 'object') {
+        console.error(`Content: Invalid subtitle object at index ${index}:`, subtitle);
+        return;
+      }
+      
+      if (!subtitle.startTime || !subtitle.endTime || !subtitle.text) {
+        console.error(`Content: Missing required properties in subtitle ${index + 1}:`, subtitle);
+        return;
+      }
+      
       const subtitleElement = document.createElement('div');
       subtitleElement.className = 'subtitle-item';
       
       // Format timing for better readability
       const formatTime = (timeStr) => {
+        if (!timeStr || typeof timeStr !== 'string') {
+          return 'Unknown';
+        }
         // Convert HH:MM:SS,mmm to more readable format
         return timeStr.replace(',', '.').replace(/^00:/, '');
       };
@@ -211,18 +271,22 @@ class YouTubeGeminiSubtitles {
       const startTime = formatTime(subtitle.startTime);
       const endTime = formatTime(subtitle.endTime);
       
-      if (subtitle.translation) {
+      // Safely get text content
+      const text = subtitle.text || 'No text available';
+      const translation = subtitle.translation || '';
+      
+      if (translation) {
         // Display both original and translation
         subtitleElement.innerHTML = `
           <div class="subtitle-timing">${startTime} → ${endTime}</div>
-          <div class="subtitle-text original">${this.escapeHtml(subtitle.text)}</div>
-          <div class="subtitle-text translation">${this.escapeHtml(subtitle.translation)}</div>
+          <div class="subtitle-text original">${this.escapeHtml(text)}</div>
+          <div class="subtitle-text translation">${this.escapeHtml(translation)}</div>
         `;
       } else {
         // Display only original text
         subtitleElement.innerHTML = `
           <div class="subtitle-timing">${startTime} → ${endTime}</div>
-          <div class="subtitle-text">${this.escapeHtml(subtitle.text)}</div>
+          <div class="subtitle-text">${this.escapeHtml(text)}</div>
         `;
       }
       
