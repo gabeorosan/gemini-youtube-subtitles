@@ -1,6 +1,44 @@
 // YouTube Gemini Subtitles - Background Script
 // Clean version with structured output focus
 
+// Handle keyboard shortcuts
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'generate-subtitles') {
+    console.log('Background: Keyboard shortcut triggered');
+    
+    // Get current tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab.url.includes('youtube.com/watch')) {
+      console.log('Background: Not on YouTube video page');
+      return;
+    }
+    
+    // Get saved settings
+    const settings = await chrome.storage.sync.get(['apiKey', 'translationLanguage', 'selectedModel']);
+    
+    if (!settings.apiKey) {
+      console.log('Background: No API key found, opening popup');
+      // Open popup if no API key is set
+      chrome.action.openPopup();
+      return;
+    }
+    
+    // Send message to content script to generate subtitles
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'generateSubtitles',
+        apiKey: settings.apiKey,
+        translationLanguage: settings.translationLanguage || '',
+        selectedModel: settings.selectedModel || 'gemini-2.0-flash'
+      });
+      console.log('Background: Subtitle generation triggered via keyboard shortcut');
+    } catch (error) {
+      console.error('Background: Error triggering subtitle generation:', error);
+    }
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'getTabInfo') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

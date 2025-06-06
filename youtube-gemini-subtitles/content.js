@@ -108,7 +108,7 @@ class YouTubeGeminiSubtitles {
       
       this.currentSubtitles = subtitles;
       this.displaySubtitles(subtitles);
-      this.showStatus('Subtitles generated successfully!', 'success');
+      this.showStatus('', 'success');
 
     } catch (error) {
       console.error('Content: Error generating subtitles:', error);
@@ -200,8 +200,6 @@ class YouTubeGeminiSubtitles {
     });
   }
 
-
-
   displaySubtitles(subtitles) {
     console.log('Content: displaySubtitles called with:', {
       type: typeof subtitles,
@@ -231,17 +229,17 @@ class YouTubeGeminiSubtitles {
     }
     
     // Add debug info at the top
-    const debugElement = document.createElement('div');
-    debugElement.className = 'subtitle-item';
-    debugElement.style.background = 'rgba(255, 0, 0, 0.1)';
-    debugElement.style.border = '1px solid red';
-    debugElement.innerHTML = `
-      <div class="subtitle-text" style="font-size: 12px; color: #ff6b6b;">
-        🐛 DEBUG INFO: Received ${subtitles.length} subtitle objects
-        <br>First subtitle: ${JSON.stringify(subtitles[0], null, 2)}
-      </div>
-    `;
-    subtitlesText.appendChild(debugElement);
+    //const debugElement = document.createElement('div');
+    //debugElement.className = 'subtitle-item';
+    //debugElement.style.background = 'rgba(255, 0, 0, 0.1)';
+    //debugElement.style.border = '1px solid red';
+    // debugElement.innerHTML = `
+    //   <div class="subtitle-text" style="font-size: 12px; color: #ff6b6b;">
+    //     🐛 DEBUG INFO: Received ${subtitles.length} subtitle objects
+    //     <br>First subtitle: ${JSON.stringify(subtitles[0], null, 2)}
+    //   </div>
+    // `;
+    //subtitlesText.appendChild(debugElement);
 
     subtitles.forEach((subtitle, index) => {
       console.log(`Content: Processing subtitle ${index + 1}:`, subtitle);
@@ -351,13 +349,7 @@ class YouTubeGeminiSubtitles {
     const statusElement = this.subtitleContainer.querySelector('.gemini-subtitles-status');
     statusElement.textContent = message;
     statusElement.className = `gemini-subtitles-status ${type}`;
-    
-    if (type === 'success') {
-      setTimeout(() => {
-        statusElement.textContent = 'Ready to generate subtitles';
-        statusElement.className = 'gemini-subtitles-status';
-      }, 3000);
-    }
+    statusElement.style.display = type === 'success' ? 'none' : 'block';
   }
 }
 
