@@ -582,55 +582,61 @@ function parseFlexibleFormat(text, hasTranslation = false) {
     // Remove any introductory text
     let cleanText = text.replace(/^.*?(?=\d+\s+\d{2}:\d{2}:\d{2})/s, '');
     
-    // Pattern to match subtitle entries in various formats
-    // Handles cases like: "1 00:25:33,045 --> 00:28:805 健康なんていらない I don't need health"
-    const flexiblePattern = /(\d+)\s+(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s*(?:-->|→|to)\s*(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s+(.+?)(?=\d+\s+\d{2}:\d{2}:\d{2}|$)/gs;
+    // Split by numbers at the start of lines to separate subtitle entries
+    const entries = cleanText.split(/(?=\d+\s+\d{2}:\d{2}:\d{2})/);
     
-    let match;
-    while ((match = flexiblePattern.exec(cleanText)) !== null) {
-      const [, sequence, startTime, endTime, content] = match;
+    for (const entry of entries) {
+      if (!entry.trim()) continue;
       
-      // Normalize time format (convert dots/colons to commas for milliseconds)
-      const normalizedStartTime = startTime.replace(/[.:](\d{3})$/, ',$1');
-      const normalizedEndTime = endTime.replace(/[.:](\d{3})$/, ',$1');
+      // More flexible pattern to handle malformed timestamps
+      const entryPattern = /^(\d+)\s+(\d{2}:\d{2}:\d{2}[,.:]\d{1,3})\s*(?:-->|→|to)\s*(\d{2}:\d{2}:\d{2}[,.:]\d{1,3})\s+(.+)$/s;
+      const match = entry.trim().match(entryPattern);
       
-      // Split content for translations
-      const contentLines = content.trim().split(/\s{2,}|\n+/);
-      
-      if (hasTranslation && contentLines.length >= 2) {
-        subtitles.push({
-          sequence: parseInt(sequence),
-          startTime: normalizedStartTime,
-          endTime: normalizedEndTime,
-          text: contentLines[0].trim(),
-          translation: contentLines[1].trim()
-        });
-      } else {
-        subtitles.push({
-          sequence: parseInt(sequence),
-          startTime: normalizedStartTime,
-          endTime: normalizedEndTime,
-          text: contentLines.join(' ').trim()
-        });
-      }
-    }
-    
-    // If no matches, try a simpler pattern for really malformed text
-    if (subtitles.length === 0) {
-      const simplePattern = /(\d+).*?(\d{2}:\d{2}:\d{2}[,.:]\d{3}).*?(\d{2}:\d{2}:\d{2}[,.:]\d{3})\s+(.+?)(?=\d+.*?\d{2}:\d{2}:\d{2}|$)/gs;
-      
-      while ((match = simplePattern.exec(cleanText)) !== null) {
+      if (match) {
         const [, sequence, startTime, endTime, content] = match;
         
-        const normalizedStartTime = startTime.replace(/[.:](\d{3})$/, ',$1');
-        const normalizedEndTime = endTime.replace(/[.:](\d{3})$/, ',$1');
+        // Normalize time format and fix malformed milliseconds
+        let normalizedStartTime = startTime.replace(/[.:](\d{1,3})$/, (_, ms) => `,${ms.padEnd(3, '0')}`);
+        let normalizedEndTime = endTime.replace(/[.:](\d{1,3})$/, (_, ms) => `,${ms.padEnd(3, '0')}`);
         
-        subtitles.push({
-          sequence: parseInt(sequence),
-          startTime: normalizedStartTime,
-          endTime: normalizedEndTime,
-          text: content.trim().replace(/\s+/g, ' ')
-        });
+        // Handle cases where content has both original and translation
+        const contentParts = content.trim().split(/\s{2,}|\n+/);
+        
+        if (hasTranslation && contentParts.length >= 2) {
+          // Try to split by language patterns (e.g., Japanese followed by English)
+          const allText = contentParts.join(' ');
+          const parts = allText.split(/(?=[A-Z][a-z]|\s[A-Z])/);
+          
+          if (parts.length >= 2) {
+            subtitles.push({
+              sequence: parseInt(sequence),
+              startTime: normalizedStartTime,
+              endTime: normalizedEndTime,
+              text: parts[0].trim(),
+              translation: parts.slice(1).join('').trim()
+            });
+          } else {
+            // Fallback: split roughly in half
+            const midPoint = Math.floor(allText.length / 2);
+            const spaceIndex = allText.indexOf(' ', midPoint);
+            const splitIndex = spaceIndex > -1 ? spaceIndex : midPoint;
+            
+            subtitles.push({
+              sequence: parseInt(sequence),
+              startTime: normalizedStartTime,
+              endTime: normalizedEndTime,
+              text: allText.substring(0, splitIndex).trim(),
+              translation: allText.substring(splitIndex).trim()
+            });
+          }
+        } else {
+          subtitles.push({
+            sequence: parseInt(sequence),
+            startTime: normalizedStartTime,
+            endTime: normalizedEndTime,
+            text: contentParts.join(' ').trim()
+          });
+        }
       }
     }
     
