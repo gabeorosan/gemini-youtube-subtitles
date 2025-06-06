@@ -78,7 +78,7 @@ You can enter any language name in the target language field. Examples:
 ## How It Works
 
 1. **Video URL Extraction**: The extension extracts the YouTube video URL from the current page
-2. **Direct Video Analysis**: Sends the YouTube URL directly to Gemini's multimodal API
+2. **File URI Processing**: Sends the YouTube URL as a file_uri to Gemini's multimodal API
 3. **AI Processing**: Gemini analyzes the actual video content, audio, and visual elements
 4. **Subtitle Generation**: Gemini generates accurate, timed subtitles based on real video analysis
 5. **Display**: Subtitles are formatted and displayed in an elegant overlay

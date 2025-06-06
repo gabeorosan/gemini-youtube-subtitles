@@ -106,13 +106,8 @@ async function transcribeWithGemini(videoData, apiKey, translationLanguage, sele
     
     const hasTranslation = translationLanguage && translationLanguage.trim();
     
-    // Create multimodal prompt with YouTube URL
+    // Create multimodal prompt with YouTube URL using file_uri
     const parts = [];
-    
-    // Add YouTube URL for direct video analysis
-    parts.push({
-      text: youtubeUrl
-    });
     
     // Add text prompt for subtitle generation
     let textPrompt;
@@ -171,7 +166,13 @@ Today we'll be exploring...
 Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing based on the actual video analysis.`;
     }
     
+    // Add text prompt first, then YouTube URL as fileData
     parts.push({ text: textPrompt });
+    parts.push({
+      fileData: {
+        fileUri: youtubeUrl
+      }
+    });
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
     console.log('Background: Making API request to:', apiUrl.replace(apiKey, '[API_KEY_HIDDEN]'));

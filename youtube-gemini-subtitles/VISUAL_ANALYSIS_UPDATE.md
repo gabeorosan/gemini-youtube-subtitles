@@ -41,17 +41,33 @@ const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
 ### Direct Video Analysis API
 ```javascript
-// Send YouTube URL directly to Gemini
+// Send YouTube URL as file_uri to Gemini (matches official example)
 const parts = [
-  { text: youtubeUrl },  // Direct YouTube URL
-  { text: "Analyze this video and generate accurate subtitles..." }
+  { text: "Analyze this video and generate accurate subtitles..." },
+  {
+    fileData: {
+      fileUri: youtubeUrl  // YouTube URL as file_uri (no mimeType needed)
+    }
+  }
 ];
 
-// Gemini processes the video natively
+// Gemini processes the video natively via file_uri
 const response = await fetch(apiUrl, {
   method: 'POST',
   body: JSON.stringify({ contents: [{ parts }] })
 });
+```
+
+This matches the official Gemini documentation pattern:
+```javascript
+const result = await model.generateContent([
+  "Please summarize the video in 3 sentences.",
+  {
+    fileData: {
+      fileUri: "https://www.youtube.com/watch?v=9hE5-98ZeCg",
+    },
+  },
+]);
 ```
 
 ### Simplified Architecture
