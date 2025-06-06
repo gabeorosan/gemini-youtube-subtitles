@@ -119,15 +119,17 @@ Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-Generate subtitles in SRT format with appropriate timing based on the actual video content. Create subtitles in the video's original language first, then provide translations in ${translationLanguage}.
+IMPORTANT: Generate subtitles in proper SRT format ONLY. Do not include any explanatory text, markdown formatting, or code blocks. Start directly with the subtitle entries.
 
-For each subtitle entry, provide BOTH the original text AND the translation in this format:
+Create subtitles in the video's original language first, then provide translations in ${translationLanguage}.
+
+For each subtitle entry, use EXACTLY this format:
 [sequence number]
 [start time] --> [end time]
 [original subtitle text]
 [${translationLanguage} translation]
 
-Example format:
+Example:
 1
 00:00:00,000 --> 00:00:03,000
 Welcome to this amazing video!
@@ -138,7 +140,7 @@ Welcome to this amazing video!
 Today we'll be exploring...
 Hoy vamos a explorar...
 
-Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing based on the actual video analysis.`;
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Use the exact time format shown (HH:MM:SS,mmm --> HH:MM:SS,mmm).`;
     } else {
       textPrompt = `Please analyze this YouTube video and generate accurate subtitles based on the actual video content.
 
@@ -147,14 +149,16 @@ Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
 
-Generate subtitles in SRT format with appropriate timing based on the actual video content. Create subtitles in the video's original language (detect from the actual video content).
+IMPORTANT: Generate subtitles in proper SRT format ONLY. Do not include any explanatory text, markdown formatting, or code blocks. Start directly with the subtitle entries.
 
-Format each subtitle as:
+Create subtitles in the video's original language (detect from the actual video content).
+
+For each subtitle entry, use EXACTLY this format:
 [sequence number]
 [start time] --> [end time]
 [subtitle text in original language]
 
-Example format:
+Example:
 1
 00:00:00,000 --> 00:00:03,000
 Welcome to this amazing video!
@@ -163,7 +167,7 @@ Welcome to this amazing video!
 00:00:03,000 --> 00:00:06,000
 Today we'll be exploring...
 
-Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing based on the actual video analysis.`;
+Generate approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing. Use the exact time format shown (HH:MM:SS,mmm --> HH:MM:SS,mmm).`;
     }
     
     // Add text prompt first, then YouTube URL as fileData
@@ -223,13 +227,23 @@ Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segm
     }
 
     console.log('Background: Generated text length:', generatedText.length);
+    console.log('Background: Generated text preview:', generatedText.substring(0, 500));
 
     // Parse the SRT format
     const subtitles = parseSRTFormat(generatedText, hasTranslation);
     console.log('Background: Parsed subtitles count:', subtitles.length);
     
     if (subtitles.length === 0) {
-      throw new Error('Failed to parse generated subtitles. Please try again.');
+      console.error('Background: Failed to parse subtitles. Generated text:', generatedText);
+      
+      // Try to create basic subtitles from the generated text as fallback
+      const fallbackSubtitles = createFallbackSubtitles(generatedText, videoLength, hasTranslation);
+      if (fallbackSubtitles.length > 0) {
+        console.log('Background: Using fallback subtitles:', fallbackSubtitles.length);
+        return fallbackSubtitles;
+      }
+      
+      throw new Error('Failed to parse generated subtitles. The AI may have generated content in an unexpected format. Please try again.');
     }
     
     return subtitles;
@@ -251,47 +265,153 @@ Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segm
 
 
 
-// Function to parse SRT format
+// Function to parse SRT format with improved flexibility
 function parseSRTFormat(srtText, hasTranslation = false) {
   const subtitles = [];
-  const blocks = srtText.split(/\n\s*\n/).filter(block => block.trim());
   
-  blocks.forEach(block => {
-    const lines = block.trim().split('\n');
+  console.log('Background: Parsing SRT text, length:', srtText.length);
+  
+  // Try to extract SRT content if it's wrapped in markdown code blocks
+  let cleanText = srtText;
+  const codeBlockMatch = srtText.match(/```(?:srt)?\s*([\s\S]*?)\s*```/i);
+  if (codeBlockMatch) {
+    cleanText = codeBlockMatch[1];
+    console.log('Background: Extracted from code block');
+  }
+  
+  // Split into blocks - try different separators
+  let blocks = cleanText.split(/\n\s*\n/).filter(block => block.trim());
+  
+  if (blocks.length === 0) {
+    // Try splitting by double newlines with different whitespace
+    blocks = cleanText.split(/\n\n+/).filter(block => block.trim());
+  }
+  
+  if (blocks.length === 0) {
+    // Try splitting by sequence numbers
+    blocks = cleanText.split(/(?=^\d+$)/m).filter(block => block.trim());
+  }
+  
+  console.log('Background: Found', blocks.length, 'blocks to parse');
+  
+  blocks.forEach((block, index) => {
+    const lines = block.trim().split('\n').map(line => line.trim()).filter(line => line);
+    console.log(`Background: Block ${index + 1}:`, lines);
+    
     if (lines.length >= 3) {
-      const sequence = parseInt(lines[0]);
-      const timeLine = lines[1];
+      // Try to find sequence number (might not be first line)
+      let sequenceIndex = 0;
+      let sequence = parseInt(lines[0]);
       
-      const timeMatch = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
-      if (timeMatch) {
-        if (hasTranslation && lines.length >= 4) {
-          // Format: sequence, time, original text, translation
-          const originalText = lines[2].trim();
-          const translationText = lines[3].trim();
-          
-          subtitles.push({
-            sequence,
-            startTime: timeMatch[1],
-            endTime: timeMatch[2],
-            text: originalText,
-            translation: translationText
-          });
-        } else {
-          // Standard format: sequence, time, text
-          const text = lines.slice(2).join('\n').trim();
-          
-          subtitles.push({
-            sequence,
-            startTime: timeMatch[1],
-            endTime: timeMatch[2],
-            text: text
-          });
+      // If first line isn't a number, look for it
+      if (isNaN(sequence)) {
+        for (let i = 0; i < lines.length; i++) {
+          const num = parseInt(lines[i]);
+          if (!isNaN(num) && lines[i].match(/^\d+$/)) {
+            sequence = num;
+            sequenceIndex = i;
+            break;
+          }
+        }
+      }
+      
+      // Find time line (look for timestamp pattern)
+      let timeLineIndex = -1;
+      let timeMatch = null;
+      
+      for (let i = sequenceIndex; i < lines.length; i++) {
+        // More flexible time matching
+        timeMatch = lines[i].match(/(\d{1,2}:\d{2}:\d{2}[,\.]\d{3})\s*[-–—>]+\s*(\d{1,2}:\d{2}:\d{2}[,\.]\d{3})/);
+        if (timeMatch) {
+          timeLineIndex = i;
+          break;
+        }
+      }
+      
+      if (timeMatch && timeLineIndex !== -1) {
+        // Normalize time format (convert dots to commas)
+        const startTime = timeMatch[1].replace('.', ',');
+        const endTime = timeMatch[2].replace('.', ',');
+        
+        // Get text lines (everything after the time line)
+        const textLines = lines.slice(timeLineIndex + 1).filter(line => line.trim());
+        
+        if (textLines.length > 0) {
+          if (hasTranslation && textLines.length >= 2) {
+            // Format: original text, translation
+            const originalText = textLines[0].trim();
+            const translationText = textLines[1].trim();
+            
+            subtitles.push({
+              sequence: sequence || subtitles.length + 1,
+              startTime: startTime,
+              endTime: endTime,
+              text: originalText,
+              translation: translationText
+            });
+          } else {
+            // Standard format: all remaining lines as text
+            const text = textLines.join('\n').trim();
+            
+            subtitles.push({
+              sequence: sequence || subtitles.length + 1,
+              startTime: startTime,
+              endTime: endTime,
+              text: text
+            });
+          }
         }
       }
     }
   });
   
+  console.log('Background: Successfully parsed', subtitles.length, 'subtitles');
   return subtitles;
+}
+
+// Create fallback subtitles when SRT parsing fails
+function createFallbackSubtitles(text, videoDuration, hasTranslation = false) {
+  const subtitles = [];
+  
+  try {
+    // Split text into sentences or meaningful chunks
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    
+    if (sentences.length === 0) {
+      return [];
+    }
+    
+    const duration = videoDuration || 60;
+    const intervalPerSentence = Math.max(3, duration / sentences.length);
+    
+    sentences.forEach((sentence, index) => {
+      const startTime = formatTime(index * intervalPerSentence);
+      const endTime = formatTime((index + 1) * intervalPerSentence);
+      
+      subtitles.push({
+        sequence: index + 1,
+        startTime: startTime,
+        endTime: endTime,
+        text: sentence.trim()
+      });
+    });
+    
+    console.log('Background: Created', subtitles.length, 'fallback subtitles');
+    return subtitles;
+  } catch (error) {
+    console.error('Background: Error creating fallback subtitles:', error);
+    return [];
+  }
+}
+
+// Format seconds to SRT time format
+function formatTime(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 }
 
 // Handle storage changes
