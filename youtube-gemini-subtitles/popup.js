@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const apiKeyInput = document.getElementById('apiKey');
-  const targetLanguageSelect = document.getElementById('targetLanguage');
+  const translationLanguageInput = document.getElementById('translationLanguage');
   const modelSelect = document.getElementById('modelSelect');
   const modelInfo = document.getElementById('modelInfo');
   const generateBtn = document.getElementById('generateBtn');
@@ -8,14 +8,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const status = document.getElementById('status');
 
   // Load saved settings
-  const settings = await chrome.storage.sync.get(['apiKey', 'targetLanguage', 'selectedModel']);
+  const settings = await chrome.storage.sync.get(['apiKey', 'translationLanguage', 'selectedModel']);
   if (settings.apiKey) {
     apiKeyInput.value = settings.apiKey;
   }
-  if (settings.targetLanguage) {
-    targetLanguageSelect.value = settings.targetLanguage;
-  } else {
-    targetLanguageSelect.value = 'English'; // Default to English
+  if (settings.translationLanguage) {
+    translationLanguageInput.value = settings.translationLanguage;
   }
 
   // Load models when API key is available
@@ -23,8 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
       // Set default model when no API key
-      modelSelect.innerHTML = '<option value="gemini-1.5-flash">gemini-1.5-flash (default)</option>';
-      modelSelect.value = 'gemini-1.5-flash';
+      modelSelect.innerHTML = '<option value="gemini-2.0-flash">gemini-2.0-flash (default)</option>';
+      modelSelect.value = 'gemini-2.0-flash';
       updateModelInfo();
       return;
     }
@@ -62,14 +60,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Add default model first
       const defaultOption = document.createElement('option');
-      defaultOption.value = 'gemini-1.5-flash';
-      defaultOption.textContent = 'gemini-1.5-flash (recommended)';
+      defaultOption.value = 'gemini-2.0-flash';
+      defaultOption.textContent = 'gemini-2.0-flash (recommended)';
       modelSelect.appendChild(defaultOption);
       
       // Add other available models
       textModels.forEach(model => {
         // Skip if it's already the default model
-        if (model.name.includes('gemini-1.5-flash')) return;
+        if (model.name.includes('gemini-2.0-flash')) return;
         
         const option = document.createElement('option');
         // Extract just the model name without the 'models/' prefix
@@ -83,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (settings.selectedModel && settings.selectedModel !== '') {
         modelSelect.value = settings.selectedModel;
       } else {
-        modelSelect.value = 'gemini-1.5-flash';
+        modelSelect.value = 'gemini-2.0-flash';
       }
       
       updateModelInfo();
@@ -96,8 +94,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function setDefaultModel() {
-    modelSelect.innerHTML = '<option value="gemini-1.5-flash">gemini-1.5-flash (default)</option>';
-    modelSelect.value = 'gemini-1.5-flash';
+    modelSelect.innerHTML = '<option value="gemini-2.0-flash">gemini-2.0-flash (default)</option>';
+    modelSelect.value = 'gemini-2.0-flash';
     updateModelInfo();
   }
 
@@ -118,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   saveSettingsBtn.addEventListener('click', async () => {
     const settings = {
       apiKey: apiKeyInput.value.trim(),
-      targetLanguage: targetLanguageSelect.value,
+      translationLanguage: translationLanguageInput.value.trim(),
       selectedModel: modelSelect.value
     };
     
@@ -127,8 +125,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   generateBtn.addEventListener('click', async () => {
+    await generateSubtitles();
+  });
+
+  async function generateSubtitles() {
     const apiKey = apiKeyInput.value.trim();
-    const targetLanguage = targetLanguageSelect.value;
+    const translationLanguage = translationLanguageInput.value.trim();
     const selectedModel = modelSelect.value;
     
     if (!apiKey) {
@@ -144,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Save settings before generating
     await chrome.storage.sync.set({
       apiKey,
-      targetLanguage,
+      translationLanguage,
       selectedModel
     });
     
@@ -164,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.tabs.sendMessage(tab.id, {
         action: 'generateSubtitles',
         apiKey,
-        targetLanguage,
+        translationLanguage,
         selectedModel
       });
       
@@ -176,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       generateBtn.disabled = false;
     }
-  });
+  }
 
   function showStatus(message, type) {
     status.textContent = message;

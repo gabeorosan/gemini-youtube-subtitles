@@ -51,14 +51,14 @@ class YouTubeGeminiSubtitles {
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'generateSubtitles') {
-        this.generateSubtitles(request.apiKey, request.targetLanguage, request.selectedModel);
+        this.generateSubtitles(request.apiKey, request.translationLanguage, request.selectedModel);
         sendResponse({ success: true });
       }
       return true;
     });
   }
 
-  async generateSubtitles(apiKey, targetLanguage, selectedModel) {
+  async generateSubtitles(apiKey, translationLanguage, selectedModel) {
     console.log('Content: Starting subtitle generation');
     
     if (this.isGenerating) {
@@ -83,17 +83,20 @@ class YouTubeGeminiSubtitles {
                         document.title || 'YouTube Video';
       const videoUrl = window.location.href;
 
-      console.log('Content: Video found:', { title: videoTitle, duration: video.duration, url: videoUrl });
+      console.log('Content: Video found:', { title: videoTitle, duration: video.duration, url: videoUrl, translationLanguage });
 
       // Extract video information
       const audioData = await this.extractVideoInfo(video);
       
       console.log('Content: Video info extracted:', audioData);
       
-      this.showStatus('Transcribing with Gemini...', 'info');
+      const statusMessage = translationLanguage ? 
+        `Generating subtitles with ${translationLanguage} translations...` : 
+        'Generating subtitles in original language...';
+      this.showStatus(statusMessage, 'info');
       
       // Generate subtitles using Gemini via background script
-      const subtitles = await this.transcribeWithGemini(audioData, apiKey, targetLanguage, selectedModel, videoTitle);
+      const subtitles = await this.transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle);
       
       console.log('Content: Subtitles received:', subtitles.length, 'items');
       
@@ -131,7 +134,7 @@ class YouTubeGeminiSubtitles {
     });
   }
 
-  async transcribeWithGemini(audioData, apiKey, targetLanguage, selectedModel, videoTitle) {
+  async transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle) {
     console.log('Content: Sending transcription request to background script');
     
     return new Promise((resolve, reject) => {
@@ -140,7 +143,7 @@ class YouTubeGeminiSubtitles {
         action: 'transcribeWithGemini',
         data: audioData,
         apiKey: apiKey,
-        targetLanguage: targetLanguage,
+        translationLanguage: translationLanguage,
         selectedModel: selectedModel,
         videoTitle: videoTitle
       };
@@ -180,10 +183,22 @@ class YouTubeGeminiSubtitles {
     subtitles.forEach(subtitle => {
       const subtitleElement = document.createElement('div');
       subtitleElement.className = 'subtitle-item';
-      subtitleElement.innerHTML = `
-        <div class="subtitle-timing">${subtitle.startTime} → ${subtitle.endTime}</div>
-        <div class="subtitle-text">${subtitle.text}</div>
-      `;
+      
+      if (subtitle.translation) {
+        // Display both original and translation
+        subtitleElement.innerHTML = `
+          <div class="subtitle-timing">${subtitle.startTime} → ${subtitle.endTime}</div>
+          <div class="subtitle-text original">${subtitle.text}</div>
+          <div class="subtitle-text translation">${subtitle.translation}</div>
+        `;
+      } else {
+        // Display only original text
+        subtitleElement.innerHTML = `
+          <div class="subtitle-timing">${subtitle.startTime} → ${subtitle.endTime}</div>
+          <div class="subtitle-text">${subtitle.text}</div>
+        `;
+      }
+      
       subtitlesText.appendChild(subtitleElement);
     });
   }
@@ -203,9 +218,15 @@ class YouTubeGeminiSubtitles {
       return;
     }
 
-    const srtContent = this.currentSubtitles.map(subtitle => 
-      `${subtitle.sequence}\n${subtitle.startTime} --> ${subtitle.endTime}\n${subtitle.text}\n`
-    ).join('\n');
+    const srtContent = this.currentSubtitles.map(subtitle => {
+      if (subtitle.translation) {
+        // Include both original and translation in SRT format
+        return `${subtitle.sequence}\n${subtitle.startTime} --> ${subtitle.endTime}\n${subtitle.text}\n${subtitle.translation}\n`;
+      } else {
+        // Standard SRT format
+        return `${subtitle.sequence}\n${subtitle.startTime} --> ${subtitle.endTime}\n${subtitle.text}\n`;
+      }
+    }).join('\n');
 
     const blob = new Blob([srtContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

@@ -1,5 +1,35 @@
 # Changelog - YouTube Gemini Subtitles
 
+## Version 1.4.0 - Smart Language Detection & Keyboard Shortcuts (2025-06-06)
+
+### 🌟 NEW FEATURES
+- **🌍 Smart Language Detection**: Automatically detects video's original language - no need to specify target language
+- **🔄 Optional Translation**: Add translation language to show translations below original subtitles
+- **⌨️ Keyboard Shortcut**: Press `Cmd+Shift+M` (Mac) or `Ctrl+Shift+M` (Windows/Linux) to instantly generate subtitles
+- **🤖 Updated Default Model**: Now uses `gemini-2.0-flash` for better performance
+
+### 🎨 UI/UX Improvements
+- **Simplified Interface**: Removed required target language field
+- **Translation Display**: Original text shown in bold, translations in italic with visual distinction
+- **Better Status Messages**: More informative feedback during generation
+- **Enhanced Download**: SRT files include both original and translation when applicable
+
+### 🔧 Technical Enhancements
+- **Background Script**: Added keyboard shortcut handler and improved API prompts
+- **Content Script**: Enhanced subtitle display and download functionality
+- **Popup Interface**: Streamlined language input and better user guidance
+- **CSS Styling**: Added specific styles for original and translated text
+
+### 📋 Breaking Changes
+- **Language Field**: "Target Language" replaced with optional "Translation Language"
+- **Default Model**: Changed from `gemini-1.5-flash` to `gemini-2.0-flash`
+
+### 🚀 Usage Examples
+- **Quick Generation**: Press `Cmd+Shift+M` on any YouTube video
+- **Original Only**: Generate subtitles without specifying any language
+- **With Translation**: Enter "Spanish" to get Spanish translations below original text
+- **Bilingual SRT**: Download includes both original and translation
+
 ## Version 1.3.0 - CORS and Communication Fixes (2025-06-06)
 
 ### 🚨 MAJOR FIXES - "Failed to fetch" Error Resolved

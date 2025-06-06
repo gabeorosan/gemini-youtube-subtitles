@@ -1,13 +1,22 @@
 {
   "manifest_version": 3,
   "name": "YouTube Gemini Subtitles",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Generate subtitles for YouTube videos using Google Gemini AI",
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
   ],
+  "commands": {
+    "generate-subtitles": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+M",
+        "mac": "Command+Shift+M"
+      },
+      "description": "Generate subtitles for current YouTube video"
+    }
+  },
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://generativelanguage.googleapis.com/*"

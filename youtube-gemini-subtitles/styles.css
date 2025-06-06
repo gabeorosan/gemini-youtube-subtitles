@@ -112,6 +112,19 @@
   color: white;
 }
 
+.subtitle-text.original {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.subtitle-text.translation {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  padding-left: 10px;
+  border-left: 2px solid rgba(102, 126, 234, 0.5);
+}
+
 /* Custom scrollbar */
 .gemini-subtitles-content::-webkit-scrollbar,
 .gemini-subtitles-text::-webkit-scrollbar {

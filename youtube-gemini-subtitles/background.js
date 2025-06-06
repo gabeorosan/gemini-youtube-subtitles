@@ -8,6 +8,44 @@ chrome.action.onClicked.addListener((tab) => {
   // Open popup (this is handled automatically by manifest.json)
 });
 
+// Handle keyboard shortcuts
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'generate-subtitles') {
+    console.log('Background: Keyboard shortcut triggered');
+    
+    // Get current tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab.url.includes('youtube.com/watch')) {
+      console.log('Background: Not on YouTube video page');
+      return;
+    }
+    
+    // Get saved settings
+    const settings = await chrome.storage.sync.get(['apiKey', 'translationLanguage', 'selectedModel']);
+    
+    if (!settings.apiKey) {
+      console.log('Background: No API key found, opening popup');
+      // Open popup if no API key is set
+      chrome.action.openPopup();
+      return;
+    }
+    
+    // Send message to content script to generate subtitles
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        action: 'generateSubtitles',
+        apiKey: settings.apiKey,
+        translationLanguage: settings.translationLanguage || '',
+        selectedModel: settings.selectedModel || 'gemini-2.0-flash'
+      });
+      console.log('Background: Subtitle generation triggered via keyboard shortcut');
+    } catch (error) {
+      console.error('Background: Error triggering subtitle generation:', error);
+    }
+  }
+});
+
 // Listen for messages from content script or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'getTabInfo') {
@@ -23,7 +61,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.action === 'transcribeWithGemini') {
-    transcribeWithGemini(request.data, request.apiKey, request.targetLanguage, request.selectedModel, request.videoTitle)
+    transcribeWithGemini(request.data, request.apiKey, request.translationLanguage, request.selectedModel, request.videoTitle)
       .then(result => {
         sendResponse({ success: true, data: result });
       })
@@ -35,9 +73,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Function to handle Gemini API calls from background script
-async function transcribeWithGemini(audioData, apiKey, targetLanguage, selectedModel, videoTitle) {
+async function transcribeWithGemini(audioData, apiKey, translationLanguage, selectedModel, videoTitle) {
   console.log('Background: Starting transcription with Gemini');
-  console.log('Background: Video data:', { title: videoTitle, duration: audioData.duration, model: selectedModel });
+  console.log('Background: Video data:', { title: videoTitle, duration: audioData.duration, model: selectedModel, translationLanguage });
   
   try {
     // Validate inputs
@@ -56,18 +94,49 @@ async function transcribeWithGemini(audioData, apiKey, targetLanguage, selectedM
     
     console.log('Background: Preparing prompt for video:', videoTitle);
     
-    const prompt = `Generate realistic subtitles for a YouTube video with the following details:
+    const hasTranslation = translationLanguage && translationLanguage.trim();
+    
+    let prompt;
+    if (hasTranslation) {
+      prompt = `Generate realistic subtitles for a YouTube video with the following details:
 Title: "${videoTitle}"
 Description: "${videoDescription}"
 Duration: ${videoLength} seconds
-Target Language: ${targetLanguage}
 
-Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. The subtitles should be in ${targetLanguage} language. Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.
+Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. 
+
+IMPORTANT: Generate subtitles in the video's original language first, then provide translations in ${translationLanguage}.
+
+For each subtitle entry, provide BOTH the original text AND the translation in this format:
+[sequence number]
+[start time] --> [end time]
+[original subtitle text]
+[${translationLanguage} translation]
+
+Example format:
+1
+00:00:00,000 --> 00:00:03,000
+Welcome to this amazing video!
+¡Bienvenidos a este increíble video!
+
+2
+00:00:03,000 --> 00:00:06,000
+Today we'll be exploring...
+Hoy vamos a explorar...
+
+Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.`;
+    } else {
+      prompt = `Generate realistic subtitles for a YouTube video with the following details:
+Title: "${videoTitle}"
+Description: "${videoDescription}"
+Duration: ${videoLength} seconds
+
+Please create subtitles in SRT format with appropriate timing. Make the subtitles engaging and natural, as if they were actual spoken content for this video topic. Generate the subtitles in the video's original language (detect from title/description).
 
 Format each subtitle as:
 [sequence number]
 [start time] --> [end time]
-[subtitle text in ${targetLanguage}]
+[subtitle text in original language]
 
 Example format:
 1
@@ -78,7 +147,8 @@ Welcome to this amazing video!
 00:00:03,000 --> 00:00:06,000
 Today we'll be exploring...
 
-Important: Generate all subtitle text in ${targetLanguage} language.`;
+Include approximately ${Math.max(10, Math.floor(videoLength / 6))} subtitle segments with realistic timing.`;
+    }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
     console.log('Background: Making API request to:', apiUrl.replace(apiKey, '[API_KEY_HIDDEN]'));
@@ -134,7 +204,7 @@ Important: Generate all subtitle text in ${targetLanguage} language.`;
     console.log('Background: Generated text length:', generatedText.length);
 
     // Parse the SRT format
-    const subtitles = parseSRTFormat(generatedText);
+    const subtitles = parseSRTFormat(generatedText, hasTranslation);
     console.log('Background: Parsed subtitles count:', subtitles.length);
     
     if (subtitles.length === 0) {
@@ -160,7 +230,7 @@ Important: Generate all subtitle text in ${targetLanguage} language.`;
 }
 
 // Function to parse SRT format
-function parseSRTFormat(srtText) {
+function parseSRTFormat(srtText, hasTranslation = false) {
   const subtitles = [];
   const blocks = srtText.split(/\n\s*\n/).filter(block => block.trim());
   
@@ -169,16 +239,32 @@ function parseSRTFormat(srtText) {
     if (lines.length >= 3) {
       const sequence = parseInt(lines[0]);
       const timeLine = lines[1];
-      const text = lines.slice(2).join('\n');
       
       const timeMatch = timeLine.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
       if (timeMatch) {
-        subtitles.push({
-          sequence,
-          startTime: timeMatch[1],
-          endTime: timeMatch[2],
-          text: text.trim()
-        });
+        if (hasTranslation && lines.length >= 4) {
+          // Format: sequence, time, original text, translation
+          const originalText = lines[2].trim();
+          const translationText = lines[3].trim();
+          
+          subtitles.push({
+            sequence,
+            startTime: timeMatch[1],
+            endTime: timeMatch[2],
+            text: originalText,
+            translation: translationText
+          });
+        } else {
+          // Standard format: sequence, time, text
+          const text = lines.slice(2).join('\n').trim();
+          
+          subtitles.push({
+            sequence,
+            startTime: timeMatch[1],
+            endTime: timeMatch[2],
+            text: text
+          });
+        }
       }
     }
   });
