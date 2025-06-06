@@ -1,0 +1,32 @@
+{
+  "name": "youtube-gemini-subtitles",
+  "version": "1.0.0",
+  "description": "Chrome extension that uses Google Gemini AI to generate subtitles for YouTube videos",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'No build process needed for this extension'",
+    "test": "echo 'No tests configured'",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "chrome-extension",
+    "youtube",
+    "subtitles",
+    "gemini",
+    "ai",
+    "google",
+    "accessibility"
+  ],
+  "author": "OpenHands",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/youtube-gemini-subtitles"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/youtube-gemini-subtitles/issues"
+  },
+  "homepage": "https://github.com/your-username/youtube-gemini-subtitles#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}

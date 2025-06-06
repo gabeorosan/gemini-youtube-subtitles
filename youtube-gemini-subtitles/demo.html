@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Gemini Subtitles - Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .feature h3 {
+            margin-top: 0;
+            color: #ff6b6b;
+        }
+        
+        .installation {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .installation h3 {
+            color: #2ecc71;
+            margin-top: 0;
+        }
+        
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .youtube-link {
+            display: inline-block;
+            background: #ff0000;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .youtube-link:hover {
+            background: #cc0000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .warning {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Gemini Subtitles</h1>
+        
+        <div class="feature">
+            <h3>🤖 AI-Powered Subtitle Generation</h3>
+            <p>This Chrome extension uses Google's Gemini AI to generate contextual subtitles for YouTube videos in multiple languages.</p>
+        </div>
+        
+        <div class="installation">
+            <h3>📦 Installation Instructions</h3>
+            <div class="step">
+                <strong>Step 1:</strong> Open Chrome and go to <code>chrome://extensions/</code>
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Enable "Developer mode" (toggle in top-right corner)
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Click "Load unpacked" and select the extension folder
+            </div>
+            <div class="step">
+                <strong>Step 4:</strong> Get your Gemini API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: #2ecc71;">Google AI Studio</a>
+            </div>
+            <div class="step">
+                <strong>Step 5:</strong> Configure the extension with your API key and preferences
+            </div>
+        </div>
+        
+        <div class="feature">
+            <h3>🎯 How to Use</h3>
+            <p>1. Navigate to any YouTube video</p>
+            <p>2. Click the extension icon in your toolbar</p>
+            <p>3. Click "Generate Subtitles"</p>
+            <p>4. Watch as AI creates contextual subtitles!</p>
+        </div>
+        
+        <div class="feature">
+            <h3>🌍 Supported Languages</h3>
+            <p>English, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Korean, Chinese, Arabic, Hindi</p>
+        </div>
+        
+        <div class="feature">
+            <h3>🎥 Test with Sample Videos</h3>
+            <p>Try the extension with these sample YouTube videos:</p>
+            <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" class="youtube-link">🎵 Music Video</a>
+            <a href="https://www.youtube.com/watch?v=jNQXAC9IVRw" target="_blank" class="youtube-link">🎤 TED Talk</a>
+            <a href="https://www.youtube.com/watch?v=9bZkp7q19f0" target="_blank" class="youtube-link">🎬 Movie Trailer</a>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ Important Notes</h3>
+            <p>• This extension generates subtitles based on video metadata, not actual audio analysis</p>
+            <p>• You need a valid Gemini API key (may incur costs based on usage)</p>
+            <p>• The extension only works on YouTube video pages</p>
+            <p>• Generated subtitles are AI-created and may not be 100% accurate</p>
+        </div>
+        
+        <div class="feature">
+            <h3>💾 Features</h3>
+            <ul>
+                <li>Dynamic Gemini model selection</li>
+                <li>Multi-language subtitle generation</li>
+                <li>SRT file export</li>
+                <li>Beautiful, responsive UI</li>
+                <li>Real-time subtitle display</li>
+                <li>Secure API key storage</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <p>Built with ❤️ using Google Gemini AI</p>
+        </div>
+    </div>
+</body>
+</html>

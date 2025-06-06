@@ -1,0 +1,161 @@
+/* Styles for the subtitle container */
+#gemini-subtitles-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 400px;
+  max-height: 600px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 30, 0.95));
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 10000;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+  display: none;
+  overflow: hidden;
+}
+
+.gemini-subtitles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.gemini-subtitles-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.gemini-subtitles-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.gemini-subtitles-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.gemini-subtitles-content {
+  padding: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.gemini-subtitles-status {
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  text-align: center;
+  background: rgba(52, 152, 219, 0.2);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.gemini-subtitles-status.success {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.gemini-subtitles-status.error {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.gemini-subtitles-status.info {
+  background: rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.3);
+}
+
+.gemini-subtitles-text {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.subtitle-item {
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.subtitle-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.subtitle-timing {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+  font-family: 'Courier New', monospace;
+}
+
+.subtitle-text {
+  font-size: 14px;
+  line-height: 1.4;
+  color: white;
+}
+
+/* Custom scrollbar */
+.gemini-subtitles-content::-webkit-scrollbar,
+.gemini-subtitles-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gemini-subtitles-content::-webkit-scrollbar-track,
+.gemini-subtitles-text::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.gemini-subtitles-content::-webkit-scrollbar-thumb,
+.gemini-subtitles-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.gemini-subtitles-content::-webkit-scrollbar-thumb:hover,
+.gemini-subtitles-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #gemini-subtitles-container {
+    width: 90%;
+    right: 5%;
+    top: 10px;
+  }
+}
+
+/* Animation for showing/hiding */
+#gemini-subtitles-container {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
